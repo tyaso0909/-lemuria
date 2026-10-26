@@ -111,10 +111,10 @@
   // 固有能力（2026-10-26 ユーザー依頼で仮実装【仮採用】。全員が最初から持つ。能力ガチャの4枠とは別。数値は仮）
   // pips: how many dots the counter shows over the resident in battle
   const INNATE = {
-    swordsman: { name: '次のページ',         desc: '4回斬ると、5回目の一撃が2倍になり、敵を少し押し返す（ボスは押し返さない）', every: 5, mul: 2, knock: 18, pips: 4 },
+    swordsman: { name: '一歩前へ',         desc: '4回斬ると、5回目の一撃が2倍になり、敵を少し押し返す（ボスは押し返さない）', every: 5, mul: 2, knock: 18, pips: 4 },
     guardian:  { name: 'かばう背中',         desc: '攻撃を10回受けるたびに、2.5秒間 受けるダメージが半分になる', every: 10, t: 2.5, v: 0.5, pips: 9 },
-    archer:    { name: '木漏れ日の狙い',     desc: '同じ敵に3本射ると、4本目は必ず会心になる', every: 4, pips: 3 },
-    mage:      { name: 'お話の続き',         desc: '攻撃を受けずに撃ち続けると、1発ごとに威力+5%（最大+25%）。攻撃を受けると元に戻る', step: 0.05, max: 5, pips: 5 },
+    archer:    { name: '届けたい言葉',     desc: '同じ敵に3本射ると、4本目は必ず会心になる', every: 4, pips: 3 },
+    mage:      { name: '待ち続けた火',         desc: '攻撃を受けずに撃ち続けると、1発ごとに威力+5%（最大+25%）。攻撃を受けると元に戻る', step: 0.05, max: 5, pips: 5 },
     healer:    { name: '手のぬくもり',       desc: 'HPが30%を切った味方への回復量が1.6倍', below: 0.3, mul: 1.6 },
     spearman:  { name: '旗のもとに',         desc: 'すぐ前に近接の味方がいる間、攻撃の速さ+15%', v: 0.15, near: 170 },
     icemage:   { name: 'かき氷のしぶき',     desc: '氷で遅くなった敵が倒れると冷気がはじけ、周りの敵を2秒遅くする', r: 80, v: 0.25, t: 2 },
@@ -709,7 +709,7 @@
     e.frozenT = Math.max(e.frozenT || 0, s);
   }
   function meleeStrike(a, t, follow) {
-    // 固有能力 次のページ（剣士）: every 5th swing (二連斬り's extra cut does not count) hits ×2.5 and pushes back
+    // 固有能力 一歩前へ（剣士）: every 5th swing (二連斬り's extra cut does not count) hits ×2.5 and pushes back
     let base = a.atkV, page = false;
     if (a.kind === 'swordsman' && !follow) {
       const I = INNATE.swordsman;
@@ -1299,13 +1299,13 @@
       if (m.breath && (a.idleT || 0) >= 2) { h.dmg *= 1 + m.breath; G.texts.push({ x: a.x, y: a.y - 84, v: '構え', life: 0.9, skill: true }); }
       const I = INNATE.sniper; h.dmg *= 1 + I.max * clamp((Math.abs(tgt.x - a.x) - I.from) / (I.to - I.from), 0, 1); // 固有能力 遠くの景色
     }
-    // 固有能力 木漏れ日の狙い（弓兵）: the 4th arrow in a row at the same enemy is always a critical hit
+    // 固有能力 届けたい言葉（弓兵）: the 4th arrow in a row at the same enemy is always a critical hit
     if (a.kind === 'archer' && !delay) {
       if (a.aimId === tgt.id) a.innC = (a.innC || 0) + 1; else { a.aimId = tgt.id; a.innC = 1; }
       if (a.innC >= INNATE.archer.every) { a.innC = 0; if (!h.crit) { h.dmg *= 1.8; h.crit = true; } }
       a.pipN = a.innC;
     }
-    // 固有能力 お話の続き（炎の魔法使い）: each shot without being hurt is stronger
+    // 固有能力 待ち続けた火（炎の魔法使い）: each shot without being hurt is stronger
     if (a.kind === 'mage') { const I = INNATE.mage; h.dmg *= 1 + I.step * (a.innS || 0); a.innS = Math.min(I.max, (a.innS || 0) + 1); a.pipN = a.innS; }
     const lob = d.shot === 'orb' || d.shot === 'ice' || d.shot === 'bomb', snipe = d.shot === 'snipe', fast = d.shot === 'bullet';
     const dur = d.shot === 'bomb' ? 0.7 : lob ? (d.shot === 'ice' ? 0.42 : 0.55) : snipe ? Math.max(0.08, dist / 3200) : fast ? Math.max(0.06, dist / 1800) : Math.max(0.18, dist / 700);
