@@ -249,20 +249,34 @@
   //  Scaling (16:9 stage fit) & canvas resolution
   // ---------------------------------------------------------------------
   let renderK = 1;
+  const TOUCH = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   function fit() {
     const vp = document.getElementById('viewport'); const vw = vp.clientWidth || window.innerWidth, vh = vp.clientHeight || window.innerHeight;
-    const s = Math.min(vw / 1280, vh / 720);
-    stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+    // スマートフォンを縦に持っているときは、ゲーム画面を90°回して横向きで表示する（ユーザー指定 2026-10-26）
+    const rot = TOUCH && vh > vw;
+    document.documentElement.classList.toggle('rot', rot && vw <= 520); // (the enlarged phone layout only for phone-sized screens, as with the landscape media query)
+    const s = rot ? Math.min(vh / 1280, vw / 720) : Math.min(vw / 1280, vh / 720);
+    stage.style.transform = `translate(-50%,-50%)${rot ? ' rotate(90deg)' : ''} scale(${s})`;
     const k = Math.max(1, Math.min(2.5, s * (window.devicePixelRatio || 1)));
     if (Math.abs(k - renderK) > 0.05 || cv.width !== Math.round(1280 * k)) {
       renderK = k; cv.width = Math.round(1280 * k); cv.height = Math.round(720 * k);
     }
-    const portrait = window.innerHeight > window.innerWidth && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-    $('rotate').hidden = !portrait;
-    if (portrait && G && G.mode === 'play') setPaused(true);
+    $('rotate').hidden = true;
   }
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', () => setTimeout(fit, 200));
+  // where the browser allows it (e.g. Chrome on Android), the first tap also goes full screen and locks the screen to landscape;
+  // elsewhere (e.g. iPhone Safari) the sideways view above is used
+  function tryLandscape() {
+    if (!TOUCH) return;
+    const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) { /* not supported */ } };
+    try {
+      const el = document.documentElement;
+      if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).then(lock, () => {});
+      else lock();
+    } catch (e) { /* not allowed here */ }
+  }
+  window.addEventListener('pointerdown', tryLandscape, { once: true, capture: true });
 
   // ---------------------------------------------------------------------
   //  Storage (best record)
@@ -2093,7 +2107,8 @@
   //  Render
   // ---------------------------------------------------------------------
   let realT = 0;
-  const PHONE = window.matchMedia('(max-height: 520px)');
+  const PHONE_MQ = window.matchMedia('(max-height: 520px)');
+  const PHONE = { get matches() { return PHONE_MQ.matches || document.documentElement.classList.contains('rot'); } };
   function render() {
     const k = renderK;
     ctx.setTransform(k, 0, 0, k, 0, 0);

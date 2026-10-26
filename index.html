@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="忘れられた夢から生まれたナイトメアを、夢の住人を召喚して灯台から退けるブラウザゲーム。">
 <title>夢の境界線</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#05081a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
 <style>
@@ -401,6 +403,88 @@ html { background: #05081a; }
   .card .bl { font-size: 15px; line-height: 20px; bottom: 30px; }
   .reward .br { font-size: 16px; } .res { font-size: 20px; }
 }
+/* Phones held upright: the game is shown turned sideways (html.rot), with the same enlarged phone layout */
+html.rot .label { font-size: 20px; }
+html.rot .bar { height: 16px; }
+html.rot .hp-box { width: 380px; }
+html.rot .wave-box .w { font-size: 38px; }
+html.rot .wave-box .left { font-size: 19px; }
+html.rot .stat { font-size: 18px; padding: 8px 14px; }
+html.rot .stat b { font-size: 24px; }
+html.rot .icon-btn { width: 72px; height: 72px; border-radius: 14px; }
+html.rot .icon-btn svg { width: 30px; height: 30px; }
+html.rot .speed-seg { height: 72px; border-radius: 14px; }
+html.rot .speed-seg button { width: 50px; font-size: 19px; }
+html.rot .stats { gap: 10px; }
+html.rot .wave-box { left: 50%; width: 360px; }
+html.rot .dock { gap: 14px; padding-left: 110px; bottom: 8px; }
+html.rot .card { width: 132px; height: 132px; border-radius: 14px; }
+html.rot .card canvas { width: 132px; height: 132px; }
+html.rot .card .nm { font-size: 20px; bottom: 6px; }
+html.rot .card .nm.long { font-size: 18px; }
+html.rot .card .cost { width: 40px; height: 40px; font-size: 24px; }
+html.rot .card .key { display: none; }
+html.rot .card .why { font-size: 18px; top: 50px; }
+html.rot .energy .cap { font-size: 15px; }
+html.rot .energy .num { font-size: 44px; }
+html.rot .pips { grid-template-columns: repeat(5, 30px); }
+html.rot .pip { width: 30px; height: 15px; }
+html.rot .army { font-size: 16px; line-height: 1; }
+html.rot .army b { font-size: 19px; }
+html.rot .energy { gap: 3px; padding: 6px 12px 8px; }
+html.rot .energy .cap { line-height: 1; }
+html.rot .energy .num { font-size: 34px; }
+html.rot .help { font-size: 19px; }
+html.rot .tagline { font-size: 24px; }
+html.rot .btn { height: 72px; font-size: 26px; min-width: 300px; border-radius: 36px; }
+html.rot .help .pc { display: none; }
+html.rot .menu-wrap .help { max-width: 900px; font-size: 18px; }
+html.rot .t-slot .nm { font-size: 20px; }
+html.rot .t-sub b { font-size: 21px; }
+html.rot .t-sub span { font-size: 17px; }
+html.rot .t-unit { height: 104px; }
+html.rot .t-unit b { font-size: 21px; }
+html.rot .t-unit .role { font-size: 16px; }
+html.rot .facts { font-size: 16px; }
+html.rot .s-tx b { font-size: 28px; }
+html.rot .s-tx .role { font-size: 16px; }
+html.rot .s-tx p { font-size: 17px; }
+html.rot .s-lock, html.rot .s-need, html.rot .s-foot { font-size: 17px; }
+html.rot .g-chars.many .g-char .nm { font-size: 19px; }
+html.rot .menu { width: 640px; }
+html.rot .menu .btn { height: 84px; font-size: 30px; }
+html.rot .mbtn { height: 96px; }
+html.rot .mbtn b { font-size: 26px; }
+html.rot .mbtn span { font-size: 17px; }
+html.rot .crystal-pill { height: 52px; font-size: 17px; }
+html.rot .crystal-pill b { font-size: 25px; }
+html.rot .btn.small { height: 58px; font-size: 21px; min-width: 0; border-radius: 29px; }
+html.rot .g-head h2 { font-size: 44px; }
+html.rot .g-head p { font-size: 18px; }
+html.rot .g-char .nm { font-size: 22px; }
+html.rot .g-stats { font-size: 20px; }
+html.rot .g-stats dd.small { font-size: 16px; }
+html.rot .g-slot .info b { font-size: 25px; }
+html.rot .g-slot .info span { font-size: 20px; }
+html.rot .g-slot .lock { width: 84px; height: 68px; font-size: 15px; }
+html.rot .g-rates { font-size: 17px; }
+html.rot .g-note { font-size: 18px; }
+html.rot .btn.roll { height: 76px; font-size: 26px; }
+html.rot .g-slot.closed .txt { font-size: 19px; }
+html.rot .rec .res { font-size: 22px; }
+html.rot .bless h2 { font-size: 52px; }
+html.rot .bless .lead { font-size: 20px; }
+html.rot .bless-card { width: 270px; }
+html.rot .bless-card .nm { font-size: 27px; }
+html.rot .bless-card .eff { font-size: 20px; }
+html.rot .bless-card .eff em { font-size: 27px; }
+html.rot .bless-card.special .eff em { font-size: 19px; }
+html.rot .bless-hint { font-size: 18px; }
+html.rot .bless-hint .pc { display: none; }
+html.rot .card .bl { font-size: 15px; line-height: 20px; bottom: 30px; }
+html.rot .reward .br { font-size: 16px; }
+html.rot .res { font-size: 20px; }
+
 @media (prefers-reduced-motion: reduce) { .card, .banner, .bar > i { transition: none; } }
 </style>
 </head>

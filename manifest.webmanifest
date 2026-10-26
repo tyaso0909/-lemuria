@@ -1,0 +1,9 @@
+{
+  "name": "夢の境界線",
+  "short_name": "夢の境界線",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#05081a",
+  "theme_color": "#05081a"
+}
