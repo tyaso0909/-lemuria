@@ -100,6 +100,32 @@
     // 人形遣い: stays back and calls 眠り人形 (max dolls at once), which form a wall and slowly fade
     dollmaster:{ name: '人形遣い', cost: 5, cd: 8.0, hp: 90, atk: 8, rate: 7.0, range: 200, speed: 46, support: true, dolls: { n: 2, max: 4, first: 0.6 }, atkLabel: '人形の攻撃力', rateLabel: '人形を呼ぶ間隔', fact: ['人形', '2体ずつ'] },
   });
+  // 固有能力（2026-10-26 ユーザー依頼で仮実装【仮採用】。全員が最初から持つ。能力ガチャの4枠とは別。数値は仮）
+  // pips: how many dots the counter shows over the resident in battle
+  const INNATE = {
+    swordsman: { name: '次のページ',         desc: '4回斬ると、5回目の一撃が2倍になり、敵を少し押し返す（ボスは押し返さない）', every: 5, mul: 2, knock: 18, pips: 4 },
+    guardian:  { name: 'かばう背中',         desc: '攻撃を10回受けるたびに、2.5秒間 受けるダメージが半分になる', every: 10, t: 2.5, v: 0.5, pips: 9 },
+    archer:    { name: '木漏れ日の狙い',     desc: '同じ敵に3本射ると、4本目は必ず会心になる', every: 4, pips: 3 },
+    mage:      { name: 'お話の続き',         desc: '攻撃を受けずに撃ち続けると、1発ごとに威力+5%（最大+25%）。攻撃を受けると元に戻る', step: 0.05, max: 5, pips: 5 },
+    healer:    { name: '手のぬくもり',       desc: 'HPが30%を切った味方への回復量が1.6倍', below: 0.3, mul: 1.6 },
+    spearman:  { name: '旗のもとに',         desc: 'すぐ前に近接の味方がいる間、攻撃の速さ+15%', v: 0.15, near: 170 },
+    icemage:   { name: 'かき氷のしぶき',     desc: '氷で遅くなった敵が倒れると冷気がはじけ、周りの敵を2秒遅くする', r: 80, v: 0.25, t: 2 },
+    bard:      { name: 'ふえていく歌',       desc: '場にいる10秒ごとに、歌で上がる手数が+2%（最大+10%）', every: 10, step: 0.02, max: 5, pips: 5 },
+    golem:     { name: '育つ城',             desc: '場にいる8秒ごとに最大HP+4%（最大+24%）。少しずつ大きくなる', every: 8, step: 0.04, max: 6, pips: 6 },
+    hunter:    { name: '図鑑の新しいページ', desc: '飛ぶ敵を倒すと、召喚エネルギーが0.5回復（1ウェーブに3回まで）', energy: 0.5, perWave: 3 },
+    sniper:    { name: '遠くの景色',         desc: '遠い敵ほど強く当たる（距離に応じて最大+30%）', from: 150, to: 420, max: 0.3 },
+    thunder:   { name: '雷の夜のたのしみ',   desc: '4回目の雷は大きな雷：連鎖が2体増え、連鎖しても威力が落ちない', every: 4, add: 2, pips: 3 },
+    ninja:     { name: 'もう一度びっくり',   desc: '跳び込んだあと10秒ごとに、もう一度前線を跳び越えて跳び込む', every: 10 },
+    paladin:   { name: '病室の約束',         desc: 'HPが半分を切ると一度だけ、周りの味方を最大HPの15%回復し、自分は3秒間 受けるダメージが半分になる', at: 0.5, heal: 0.15, t: 3, v: 0.5 },
+    pyro:      { name: '三連発',             desc: '5発目ごとに、前方へ小さな花火を3つ上げる（1つ60%の威力）', every: 5, n: 3, mul: 0.6, gap: 70, pips: 4 },
+    engineer:  { name: '放っておけない',     desc: '砲台が壊されると、すぐ次を建て始める（建て直し6秒→2秒）', rebuild: 2 },
+    berserker: { name: 'もう一度立つ',       desc: '倒れる一撃を受けても、一度だけHP30%で立ち上がる', hp: 0.3 },
+    gunner:    { name: 'とっておきの一発',   desc: '弾倉の最後の1発は水風船：小さな範囲に1.5倍のダメージ', mul: 1.5, r: 46 },
+    crossbow:  { name: '工夫を重ねる',       desc: '1本の矢が当たった敵1体につき、次の装填が8%速くなる（最大40%）', step: 0.08, max: 0.4 },
+    dollmaster:{ name: 'みんないっしょ',     desc: '人形が多く並ぶほど人形が強い（1体につき人形の攻撃力+10%・受けるダメージ-5%）', atk: 0.1, guard: 0.05 },
+  };
+  const innOf = (u) => INNATE[u.kind];
+  const innText = (u, v) => G.texts.push({ x: u.x, y: u.y - 92, v, life: 1.1, skill: true });
   // allies that are called by other allies (not cards): they do not count toward the ally cap
   const SUMMONS = {
     turret: { name: '砲台', hp: 120, atk: 9, rate: 0.6, range: 220, speed: 0, shot: 'gear', summoned: true },
@@ -336,9 +362,10 @@
     const d = a.def, m = a.m || {};
     a.spd0 = d.speed * (1 + (m.move || 0)); a.speed = a.spd0 * (1 - (a.chill || 0)); a.rate = d.rate / (1 + (m.aspd || 0));
     a.atkV = (d.atk || 0) * (1 + (m.atk || 0)); a.healV = (d.heal || 0) * (1 + (m.heal || 0)); a.reachV = d.range * (1 + (m.reach || 0));
-    const mx = Math.round(d.hp * (1 + (m.hp || 0)));
+    const mx = Math.round(d.hp * (1 + (m.hp || 0)) * growOf(a));
     if (mx !== a.maxHp) { a.hp = a.hp * mx / a.maxHp; a.maxHp = mx; }
   }
+  const growOf = (a) => a.kind === 'golem' ? 1 + INNATE.golem.step * (a.innS || 0) : 1; // 固有能力 育つ城
   // a turret / doll called by an owner: stats come from SUMMONS, scaled by the owner's abilities
   function makeSummon(kind, owner, x) {
     const d = SUMMONS[kind], om = owner.m || {};
@@ -587,16 +614,26 @@
     if (!ally && target.starveT > 0 && target.def.drain) amount *= 1 + target.def.drain.weak;
     // ハンターの印: a marked enemy takes more from every ally
     if (!ally && from && from.side === 'ally' && target.markT > G.time) amount *= 1 + target.markV;
+    // 固有能力 かばう背中（盾兵）/ 病室の約束（パラディン）: half damage for a while
+    const raw = amount;
+    if (ally && target.halfT > G.time) amount *= 1 - (target.halfV || 0.5);
     const guard = ally && target.m ? (target.m.guard || 0) : 0;
     const armor = (target.def.armor || 0) * (1 - (pen || 0));
     const aura = ally ? (target.auraV || 0) : 0; // パラディンの守りの輪
-    let dmg = Math.max(1, Math.round(amount * (1 - armor) * (1 - guard) * (1 - aura)));
+    const team = ally && target.kind === 'doll' ? INNATE.dollmaster.guard * (target.teamN || 0) : 0; // 固有能力 みんないっしょ
+    let dmg = Math.max(1, Math.round(amount * (1 - armor) * (1 - guard) * (1 - aura) * (1 - team)));
     // 灯を喰らうもの: the membrane made from drained energy takes the hit first
     if (!ally && target.shieldHp > 0) { const sh = Math.min(target.shieldHp, dmg); target.shieldHp -= sh; dmg -= sh; if (dmg <= 0) { target.hurt = 1; return 0; } }
+    // 固有能力 もう一度立つ（バーサーカー）: survives one lethal hit at 30% HP
+    if (ally && target.kind === 'berserker' && !target.rose && target.hp - dmg <= 0) {
+      target.rose = true; target.hp = Math.max(1, Math.round(target.maxHp * INNATE.berserker.hp)); target.invul = 0.6; target.hurt = 1;
+      innText(target, 'もう一度立つ'); G.fx.push({ type: 'heal', x: target.x, y: target.y, life: 1, dur: 0.8 });
+      return 0;
+    }
     // 身代わり: a paladin nearby may take a hit that would fell another ally
     if (ally && target.hp - dmg <= 0 && !target.def.aura && !target.summoned && !(target.m && target.m.undying && !target.usedUndying)) {
       const p = G.allies.find((o) => !o.dead && o.def.aura && o.m && o.m.cover && o.hp > o.maxHp * 0.3 && Math.abs(o.x - target.x) <= o.def.aura.r * (1 + (o.m.ring || 0)) && Math.random() < o.m.cover);
-      if (p) { G.texts.push({ x: target.x, y: target.y - 84, v: '身代わり', life: 1.1, skill: true }); return damage(p, amount, from, crit, pen); }
+      if (p) { G.texts.push({ x: target.x, y: target.y - 84, v: '身代わり', life: 1.1, skill: true }); return damage(p, raw, from, crit, pen); }
     }
     // 不屈: survive one lethal hit, then a short invulnerability
     if (ally && target.m && target.m.undying && !target.usedUndying && target.hp - dmg <= 0) {
@@ -607,17 +644,34 @@
     }
     target.hp -= dmg; target.hurt = 1;
     G.texts.push({ x: target.x + rand(-8, 8), y: target.y - (target.boss ? 220 : 70) - flyH(target), v: crit ? dmg + '!' : dmg, life: 0.8, enemy: !ally, crit: !!crit });
+    if (ally) innHurt(target, from);
     // 反撃の盾
     if (ally && target.m && target.m.reflect && from && from.side === 'enemy' && !from.dead) damage(from, dmg * target.m.reflect, null);
     if (!ally && target.def.ai === 'friend') target.revealT = Math.max(target.revealT || 0, target.def.hitShow); // 顔のない友人: a hit makes it show itself
     if (target.hp <= 0) kill(target, from);
     return dmg;
   }
+  // 固有能力 that react to a resident being hurt
+  function innHurt(a, from) {
+    if (a.kind === 'guardian' && from && from.side === 'enemy') {
+      const I = INNATE.guardian;
+      a.innC = (a.innC || 0) + 1;
+      if (a.innC >= I.every) { a.innC = 0; a.halfT = G.time + I.t; a.halfV = I.v; innText(a, 'かばう背中'); G.fx.push({ type: 'aura', x: a.x, y: a.y, life: 1, dur: 0.8, r: 46 }); }
+      a.pipN = a.innC;
+    } else if (a.kind === 'mage') { a.innS = 0; a.pipN = 0; }
+    else if (a.kind === 'paladin' && !a.vowed && a.hp > 0 && a.hp < a.maxHp * INNATE.paladin.at) {
+      const I = INNATE.paladin, r = a.def.aura.r * (1 + ((a.m && a.m.ring) || 0));
+      a.vowed = true; a.halfT = G.time + I.t; a.halfV = I.v; innText(a, '病室の約束');
+      for (const o of G.allies) if (!o.dead && o !== a && !o.summoned && Math.abs(o.x - a.x) <= r && o.hp < o.maxHp) { o.hp = Math.min(o.maxHp, o.hp + o.maxHp * I.heal); G.fx.push({ type: 'heal', x: o.x, y: o.y, life: 0.9, dur: 0.7 }); }
+      G.fx.push({ type: 'aura', x: a.x, y: a.y, life: 1, dur: 1.2, r });
+    }
+  }
   // an ally's hit value (crit + 祝福 buff)
   function allyHit(a, base) {
     const m = a.m || {};
     const crit = m.crit && Math.random() < m.crit;
-    const buff = (a.blessT > 0 ? 1 + a.blessV : 1) * (1 + (a.anthemV || 0)) * (1 + (a.frenzyV || 0));
+    const team = a.kind === 'doll' ? 1 + INNATE.dollmaster.atk * (a.teamN || 0) : 1; // 固有能力 みんないっしょ
+    const buff = (a.blessT > 0 ? 1 + a.blessV : 1) * (1 + (a.anthemV || 0)) * (1 + (a.frenzyV || 0)) * team;
     return { dmg: base * buff * (crit ? 1.8 : 1), crit };
   }
   function drainTo(a, dealt) {
@@ -630,7 +684,15 @@
     e.frozenT = Math.max(e.frozenT || 0, s);
   }
   function meleeStrike(a, t, follow) {
-    const h = allyHit(a, a.atkV);
+    // 固有能力 次のページ（剣士）: every 5th swing (二連斬り's extra cut does not count) hits ×2.5 and pushes back
+    let base = a.atkV, page = false;
+    if (a.kind === 'swordsman' && !follow) {
+      const I = INNATE.swordsman;
+      a.innC = (a.innC || 0) + 1;
+      if (a.innC >= I.every) { a.innC = 0; page = true; base *= I.mul; }
+      a.pipN = a.innC;
+    }
+    const h = allyHit(a, base);
     const m = a.m || {}, d = a.def;
     if (d.line) {
       // 槍兵: thrust through the first enemies in line within reach
@@ -657,6 +719,10 @@
       return;
     }
     drainTo(a, damage(t, h.dmg, a, h.crit));
+    if (page) {
+      if (!t.dead && !t.boss) t.x += INNATE.swordsman.knock;
+      G.fx.push({ type: 'slash', x: t.x, y: t.y - 34, life: 1, dur: 0.4, big: true }); G.shake = Math.max(G.shake, 0.1);
+    }
     // 旋風斬り
     if (m.cleave) for (const e of G.enemies) if (e !== t && !e.dead && !e.fly && Math.abs(e.x - t.x) <= 50) drainTo(a, damage(e, h.dmg * m.cleave, a));
     // 二連斬り
@@ -672,6 +738,22 @@
     }
     if (u.side === 'enemy') {
       G.kills++;
+      // 固有能力 図鑑の新しいページ（ハンター）: a flyer shot down gives back a little energy (a few times per wave)
+      if (u.fly && killer && killer.kind === 'hunter') {
+        const I = INNATE.hunter;
+        if (G.huntW !== G.wave) { G.huntW = G.wave; G.huntN = 0; }
+        if (G.huntN < I.perWave) { G.huntN++; G.energy = Math.min(CONFIG.energyMax, G.energy + I.energy); G.texts.push({ x: killer.x, y: killer.y - 92, v: '+' + I.energy + ' エネルギー', life: 1.2, heal: true }); }
+      }
+      // 固有能力 かき氷のしぶき（氷の魔法使い）: an enemy slowed by ice bursts into cold when it falls
+      if (u.iceT > G.time && G.allies.some((o) => !o.dead && o.kind === 'icemage')) {
+        const I = INNATE.icemage;
+        for (const e of G.enemies) if (!e.dead && e !== u && !e.stanceOn && Math.abs(e.x - u.x) <= I.r + (e.def.radius || 0)) {
+          const v = e.boss ? I.v * 0.35 : I.v;
+          if (v >= (e.slowV || 0) || !(e.slowT > 0)) e.slowV = v;
+          e.slowT = Math.max(e.slowT || 0, I.t); e.iceT = Math.max(e.iceT || 0, G.time + I.t);
+        }
+        G.fx.push({ type: 'frost', x: u.x, y: u.y, life: 1, dur: 0.5, r: I.r });
+      }
       // 速達: a letter shot down is opened — the undelivered words reach the residents around it
       if (u.def.courier) {
         const X = ENEMIES.postman.express, words = ['ありがとう', 'ごめんね', 'またね', 'だいすき', 'げんきでね'];
@@ -690,7 +772,11 @@
         for (const a of G.allies) { a.hitByRun = false; a.hitByDash = false; }
         G.shake = 0.8; G.fx.push({ type: 'burst', x: u.x, y: u.y - 110 - flyH(u), life: 1, dur: 1.6 }); }
     } else {
-      if (u.summoned) { expire(u, true); return; }
+      if (u.summoned) {
+        // 固有能力 放っておけない（エンジニア）: a turret that was destroyed is rebuilt quickly
+        if (u.kind === 'turret') { const o = G.allies.find((x) => x.id === u.owner && !x.dead); if (o) o.fastBuild = true; }
+        expire(u, true); return;
+      }
       G.lost++;
       for (let i = 0; i < 10; i++) G.motes.push({ x: u.x + rand(-10, 10), y: u.y - rand(10, 50), vx: rand(-30, 30), vy: rand(-70, -20), life: rand(0.6, 1.2), max: 1.2, color: '200,230,255', kind: 'spark' });
       Sound.play('allyDown');
@@ -776,6 +862,22 @@
       for (const a of A) if (Math.abs(a.x - b.x) <= r) a.chill = Math.max(a.chill, c.v);
     }
     for (const a of A) a.speed = a.spd0 * (1 - a.chill);
+    // 固有能力: 旗のもとに（槍兵）/ ふえていく歌（バード）/ 育つ城（ゴーレム）/ みんないっしょ（人形）
+    const vanX = A.reduce((m, o) => o.def.melee && !o.def.mid && !o.away && !(o.toyT > 0) ? Math.max(m, o.x) : m, 0);
+    for (const a of A) {
+      a.age = (a.age || 0) + dt;
+      if (a.kind === 'spearman') a.rallyV = vanX > a.x && vanX - a.x <= INNATE.spearman.near ? INNATE.spearman.v : 0;
+      else if (a.kind === 'bard') { const I = INNATE.bard; a.innS = Math.min(I.max, Math.floor(a.age / I.every)); a.pipN = a.innS; }
+      else if (a.kind === 'golem') {
+        const I = INNATE.golem, n = Math.min(I.max, Math.floor(a.age / I.every));
+        if (n > (a.innS || 0)) {
+          a.innS = n; a.pipN = n;
+          const mx = Math.round(a.def.hp * (1 + ((a.m && a.m.hp) || 0)) * growOf(a));
+          a.hp += mx - a.maxHp; a.maxHp = mx;
+          G.fx.push({ type: 'heal', x: a.x, y: a.y, life: 0.9, dur: 0.7 });
+        }
+      } else if (a.kind === 'doll') a.teamN = A.filter((o) => o.kind === 'doll' && o.owner === a.owner).length;
+    }
     // バードの歌: allies inside any bard's ring get faster attacks (and more attack with 高揚の歌)
     for (const a of A) { a.songV = 0; a.anthemV = 0; a.auraV = 0; }
     // パラディンの守りの輪: allies within the ring take less damage (守りの輪 widens and strengthens it)
@@ -787,7 +889,7 @@
     }
     for (const b of A) if (b.kind === 'bard') {
       const m = b.m || {}, r = b.def.range * (1 + (m.echo || 0));
-      const sv = b.def.song * (1 + (m.song || 0));
+      const sv = b.def.song * (1 + (m.song || 0)) + INNATE.bard.step * (b.innS || 0);
       for (const a of A) if (a !== b && Math.abs(a.x - b.x) <= r) { a.songV = Math.max(a.songV, sv); a.anthemV = Math.max(a.anthemV, m.anthem || 0); }
     }
 
@@ -803,7 +905,7 @@
       // 封（郵便屋の手紙・影の手）: cannot attack for a while. おもちゃ（魔女）: cannot act at all, and nightmares walk past it
       if (a.sealT > 0) { a.sealT -= dt; a.cool = Math.max(a.cool, 0.1); }
       if (a.toyT > 0) { if (a.invul > 0) a.invul -= dt; a.toyT -= dt; a.anim += dt; a.walk = false; a.atk = 0; a.hurt = Math.max(0, a.hurt - dt * 4); continue; }
-      a.anim += dt; a.atk = Math.max(0, a.atk - dt * 3); a.hurt = Math.max(0, a.hurt - dt * 4); a.cool -= dt * (1 + a.songV + (a.frenzyV || 0) * 0.5) * (a.dazeT > 0 ? 0.5 : 1) * (1 - a.chill) * (a.sealT > 0 ? 0 : 1);
+      a.anim += dt; a.atk = Math.max(0, a.atk - dt * 3); a.hurt = Math.max(0, a.hurt - dt * 4); a.cool -= dt * (1 + a.songV + (a.frenzyV || 0) * 0.5 + (a.rallyV || 0)) * (a.dazeT > 0 ? 0.5 : 1) * (1 - a.chill) * (a.sealT > 0 ? 0 : 1);
       if (a.invul > 0) a.invul -= dt;
       // 砲台 runs out after its life; 眠り人形 slowly fades
       if (a.life != null) { a.life -= dt; if (a.life <= 0) { expire(a); continue; } }
@@ -1034,7 +1136,7 @@
             if (e.dead || e.stanceOn) continue;
             const v = e.boss ? slowV * 0.35 : slowV;
             if (v >= (e.slowV || 0) || e.slowT <= 0) { e.slowV = v; }
-            e.slowT = Math.max(e.slowT || 0, s.slowTime);
+            e.slowT = Math.max(e.slowT || 0, s.slowTime); e.iceT = Math.max(e.iceT || 0, G.time + s.slowTime);
             if (m.freeze && Math.random() < m.freeze) stun(e, 1.5);
           }
           drainTo(s.from, dealt);
@@ -1061,6 +1163,13 @@
           }
           drainTo(s.from, dealt);
           Sound.play('magic');
+        } else if (s.balloon) {
+          // 固有能力 とっておきの一発（ガンナー）: the last shot of a magazine is a water balloon that splashes
+          G.fx.push({ type: 'boom', x: tx, y: ty + 30, life: 1, dur: 0.4, r: s.balloon, color: '140,205,255' });
+          let dealt = 0;
+          for (const e of alive(G.enemies)) if (Math.abs(e.x - tx) <= s.balloon + (e.def.radius || 0) && Math.abs(hitY(e) - ty) <= 90) dealt += damage(e, s.dmg, s.from, s.crit);
+          drainTo(s.from, dealt);
+          Sound.play('hit');
         } else if (s.target && !s.target.dead) {
           const t = s.target, fd = s.from && s.from.def;
           drainTo(s.from, damage(t, s.dmg, s.from, s.crit, s.pen)); Sound.play('hit');
@@ -1114,6 +1223,7 @@
   // sprite heights for the HP bar and the hunter's mark (× Art.SIZE)
   const TALL = { armor: 90, golem: 92, mage: 86, icemage: 86, thunder: 86, sniper: 76, hunter: 76, ninja: 70, paladin: 92, pyro: 74, engineer: 74, berserker: 84, gunner: 76, crossbow: 78, dollmaster: 74, doll: 46, turret: 46, weaver: 84, charger: 62, swarm: 40, flyer: 48, bomber: 56, bell: 72, mender: 74, spitter: 70 };
   const flyH = (u) => u.fly ? (u.lowFly ? 34 : FLY_H) : 0;
+  const growView = (u) => u.kind === 'golem' ? 1 + 0.03 * (u.innS || 0) : 1; // 育つ城: the golem grows a little
   const hitY = (u) => u.y - 30 - flyH(u);
   function enemyFire(e, tgt, kind, mul, y0off) {
     const x0 = e.x - 14, y0 = e.y - (y0off || 34);
@@ -1151,22 +1261,45 @@
     if (d.shot === 'bolt') { chainBolt(a, tgt, h); return; }
     if (d.shot === 'quarrel') { quarrel(a, tgt, h); return; }
     // ガンナー: count the magazine down; an empty magazine means a reload (早撃ち speeds up the first magazine)
+    let balloon = 0;
     if (d.mag) {
       const size = d.mag + Math.round(m.mag || 0);
       a.mag = (a.mag > 0 ? a.mag : size) - 1;
-      if (a.mag <= 0) { a.mag = size; a.cool = d.reload / (1 + (m.aspd || 0)); a.firstMag = true; }
+      if (a.mag <= 0) { a.mag = size; a.cool = d.reload / (1 + (m.aspd || 0)); a.firstMag = true; balloon = INNATE.gunner.r; h.dmg *= INNATE.gunner.mul; } // 固有能力 とっておきの一発
       else if (!a.firstMag && m.quick) a.cool = a.rate / (1 + m.quick);
     }
     if (d.antiAir && tgt.fly) h.dmg *= d.antiAir;
     if (d.pickTough) {
       if (m.weak && (tgt.elite || tgt.boss)) h.dmg *= 1 + m.weak; // 弱点狙い
       if (m.breath && (a.idleT || 0) >= 2) { h.dmg *= 1 + m.breath; G.texts.push({ x: a.x, y: a.y - 84, v: '構え', life: 0.9, skill: true }); }
+      const I = INNATE.sniper; h.dmg *= 1 + I.max * clamp((Math.abs(tgt.x - a.x) - I.from) / (I.to - I.from), 0, 1); // 固有能力 遠くの景色
     }
+    // 固有能力 木漏れ日の狙い（弓兵）: the 4th arrow in a row at the same enemy is always a critical hit
+    if (a.kind === 'archer' && !delay) {
+      if (a.aimId === tgt.id) a.innC = (a.innC || 0) + 1; else { a.aimId = tgt.id; a.innC = 1; }
+      if (a.innC >= INNATE.archer.every) { a.innC = 0; if (!h.crit) { h.dmg *= 1.8; h.crit = true; } }
+      a.pipN = a.innC;
+    }
+    // 固有能力 お話の続き（炎の魔法使い）: each shot without being hurt is stronger
+    if (a.kind === 'mage') { const I = INNATE.mage; h.dmg *= 1 + I.step * (a.innS || 0); a.innS = Math.min(I.max, (a.innS || 0) + 1); a.pipN = a.innS; }
     const lob = d.shot === 'orb' || d.shot === 'ice' || d.shot === 'bomb', snipe = d.shot === 'snipe', fast = d.shot === 'bullet';
     const dur = d.shot === 'bomb' ? 0.7 : lob ? (d.shot === 'ice' ? 0.42 : 0.55) : snipe ? Math.max(0.08, dist / 3200) : fast ? Math.max(0.06, dist / 1800) : Math.max(0.18, dist / 700);
     const arc = d.shot === 'bomb' ? 70 : d.shot === 'orb' ? 40 : d.shot === 'ice' ? 22 : snipe || fast ? 0 : 18 + dist * 0.05;
-    G.shots.push({ kind: d.shot, from: a, x0, y0, x: x0, y: y0, tx: tgt.x, ty: hitY(tgt), target: tgt, t: -(delay || 0), dur, arc, dmg: h.dmg, crit: h.crit, pen: d.pen || 0, aoe: (d.aoe || 0) * (1 + (m.blast || 0) + (m.bigball || 0)), slow: d.slow || 0, slowTime: d.slowTime || 0, knock: d.knock || 0, stall: m.stall || 0 });
+    G.shots.push({ kind: d.shot, from: a, x0, y0, x: x0, y: y0, tx: tgt.x, ty: hitY(tgt), target: tgt, t: -(delay || 0), dur, arc, dmg: h.dmg, crit: h.crit, pen: d.pen || 0, aoe: (d.aoe || 0) * (1 + (m.blast || 0) + (m.bigball || 0)), slow: d.slow || 0, slowTime: d.slowTime || 0, knock: d.knock || 0, stall: m.stall || 0, balloon });
     Sound.play(snipe ? 'snipe' : d.shot === 'bomb' ? 'toss' : fast ? 'pop' : 'shoot');
+    // 固有能力 三連発（花火師）: every 5th bomb also sends up three small fireworks further ahead
+    if (a.kind === 'pyro' && !delay) {
+      const I = INNATE.pyro, sh = G.shots[G.shots.length - 1];
+      a.innC = (a.innC || 0) + 1;
+      if (a.innC >= I.every) {
+        a.innC = 0;
+        for (let i = 1; i <= I.n; i++) {
+          const tx = Math.min(LANE.enemySpawn - 20, tgt.x + I.gap * (i - 0.5)), ty = hitY(tgt) + rand(-8, 8);
+          G.shots.push(Object.assign({}, sh, { target: null, tx, ty, t: -0.16 * i, dur: 0.6, arc: 90 + i * 13, dmg: (h.crit ? h.dmg / 1.8 : h.dmg) * I.mul, crit: false, aoe: sh.aoe * 0.65, knock: 0, small: true }));
+        }
+      }
+      a.pipN = a.innC;
+    }
     // 連射
     if (!delay && m.multi && Math.random() < m.multi) fire(a, tgt, 0.14);
   }
@@ -1174,7 +1307,13 @@
   // 雷の魔法使い: instant bolt that jumps from enemy to enemy (flyers included)
   function chainBolt(a, first, h) {
     const d = a.def, m = a.m || {};
-    const n = d.chain + (m.chain && Math.random() < m.chain ? 1 : 0);
+    let n = d.chain + (m.chain && Math.random() < m.chain ? 1 : 0), fall = d.chainFall;
+    // 固有能力 雷の夜のたのしみ: every 4th cast is a big bolt (+2 jumps, no fall-off)
+    const I = INNATE.thunder;
+    a.innC = (a.innC || 0) + 1;
+    const big = a.innC >= I.every;
+    if (big) { a.innC = 0; n += I.add; fall = 1; }
+    a.pipN = a.innC;
     const hit = [first], pts = [{ x: a.x + 16 * (a.face || 1), y: a.y - 74 }];
     let cur = first;
     while (hit.length < n) {
@@ -1186,11 +1325,12 @@
     let dealt = 0;
     hit.forEach((e, i) => {
       pts.push({ x: e.x, y: hitY(e) });
-      dealt += damage(e, h.dmg * Math.pow(d.chainFall, i), a, i === 0 && h.crit);
+      dealt += damage(e, h.dmg * Math.pow(fall, i), a, i === 0 && h.crit);
       if (m.static && !e.dead && Math.random() < m.static) stun(e, 0.5); // 帯電
     });
     drainTo(a, dealt);
-    G.fx.push({ type: 'bolt', pts, life: 1, dur: 0.28, seed: Math.random() * 1000 });
+    G.fx.push({ type: 'bolt', pts, life: 1, dur: big ? 0.45 : 0.28, seed: Math.random() * 1000 });
+    if (big) { G.fx.push({ type: 'bolt', pts, life: 1, dur: 0.45, seed: Math.random() * 1000 }); G.shake = Math.max(G.shake, 0.12); }
     Sound.play('zap');
   }
 
@@ -1201,12 +1341,14 @@
     const line = G.enemies.filter((e) => !e.dead && (e.x - a.x) * dir > -10 && Math.abs(e.x - a.x) <= reach + (e.def.radius || 12)).sort((p, q) => Math.abs(p.x - a.x) - Math.abs(q.x - a.x));
     if (!line.includes(first)) line.unshift(first);
     line.length = Math.min(line.length, d.pierceMax || 99);
-    let dealt = 0;
+    let dealt = 0, landed = 0;
     line.forEach((e, i) => {
-      dealt += damage(e, h.dmg * Math.pow(fall, i), a, i === 0 && h.crit);
+      const got = damage(e, h.dmg * Math.pow(fall, i), a, i === 0 && h.crit); dealt += got; if (got > 0) landed++;
       if (i === 0 && !e.dead && !e.boss) { e.x += d.knock; if (m.nail && Math.random() < m.nail) stun(e, 1); } // 釘打ち
     });
     drainTo(a, dealt);
+    // 固有能力 工夫を重ねる: the more enemies one bolt hit, the sooner the next one is loaded
+    const I = INNATE.crossbow; a.cool *= 1 - Math.min(I.max, I.step * landed);
     const x0 = a.x + 16 * dir, y0 = a.y - 36, x1 = a.x + reach * dir;
     G.shots.push({ kind: 'quarrel', visual: true, from: a, x0, y0, x: x0, y: y0, tx: x1, ty: y0 + 4, target: null, t: 0, dur: Math.max(0.12, reach / 2200), arc: 0 });
     Sound.play('snipe');
@@ -1223,8 +1365,8 @@
   function updateEngineer(a, A, E, frontAlly, dt) {
     const d = a.def, T = d.turret, m = a.m || {};
     // builds a new turret rebuild s after its last one is gone
-    if (!A.some((t) => t.kind === 'turret' && t.owner === a.id)) { a.buildT = (a.buildT == null ? T.rebuild : a.buildT) - dt; if (a.buildT <= 0) { a.buildT = null; placeTurret(a); a.atk = 1; Sound.play('tick'); } }
-    else a.buildT = null;
+    if (!A.some((t) => t.kind === 'turret' && t.owner === a.id)) { a.buildT = (a.buildT == null ? (a.fastBuild ? INNATE.engineer.rebuild : T.rebuild) : a.buildT) - dt; if (a.buildT <= 0) { a.buildT = null; a.fastBuild = false; placeTurret(a); a.atk = 1; Sound.play('tick'); } }
+    else { a.buildT = null; a.fastBuild = false; }
     if (a.cool <= 0) {
       a.cool = T.every / (1 + (m.aspd || 0));
       let fixed = false;
@@ -1276,6 +1418,7 @@
         }
         if (m.smoke) { a.invul = Math.max(a.invul, m.smoke); G.fx.push({ type: 'smoke', x: a.x, y: a.y, life: 1, dur: 0.9 }); } // 煙玉
         a.cool = a.rate; a.atk = 1; a.face = -1;
+        a.reLeapAt = G.time + INNATE.ninja.every; // 固有能力 もう一度びっくり
       }
       return true;
     }
@@ -1299,12 +1442,14 @@
       a.returning = false; a.away = false;
       return false;
     }
+    if (!a.leapReady && a.reLeapAt && G.time >= a.reLeapAt) { a.leapReady = true; a.reLeapAt = 0; }
     if (a.leapReady && !(a.sealT > 0)) {
       let t = null;
       const from = Math.max(a.x, lineX) + 60;
       for (const e of E) if (!e.dead && !e.fly && (LEAP_ROLES.includes(e.def.role) || e.def.leapable) && e.x > from && e.x <= L.maxX && (!t || e.x < t.x)) t = e;
       if (t) {
         a.leapReady = false; a.away = true; a.leapT = 0; a.leapFrom = a.x;
+        if (a.leapN = (a.leapN || 0) + 1, a.leapN > 1) innText(a, 'もう一度びっくり');
         a.leapTo = Math.min(L.maxX + 40, t.x + 30 + rand(-12, 12)); a.leapTgt = t;
         a.leapDur = L.time + Math.abs(a.leapTo - a.x) / 2400;
         a.invul = Math.max(a.invul, a.leapDur);
@@ -1321,7 +1466,7 @@
     for (const o of A) { if ((o === a && A.length > 1) || o.summoned) continue; const r = o.hp / o.maxHp - (o.hp < o.maxHp && frontAlly - o.x < 60 ? 0.12 : 0); if (o.hp < o.maxHp && r < worst && Math.abs(o.x - a.x) <= d.range) { worst = r; tgt = o; } }
     const enemyNear = E.some((e) => e.x - a.x < 170 && e.x - a.x > -30);
     if (tgt && a.cool <= 0) {
-      const m = a.m || {}, amt = Math.round(a.healV);
+      const m = a.m || {}, base = Math.round(a.healV), amt = Math.round(a.healV * (tgt.hp / tgt.maxHp < INNATE.healer.below ? INNATE.healer.mul : 1)); // 固有能力 手のぬくもり（波紋には乗せない）
       a.cool = a.rate; a.atk = 1;
       tgt.hp = Math.min(tgt.maxHp, tgt.hp + amt);
       G.fx.push({ type: 'heal', x: tgt.x, y: tgt.y, life: 1, dur: 0.7 });
@@ -1330,7 +1475,7 @@
       if (m.bless) { tgt.blessV = Math.max(tgt.blessT > 0 ? tgt.blessV : 0, m.bless); tgt.blessT = 4; }
       // 癒しの波紋
       if (m.ripple) for (const o of A) if (o !== tgt && !o.summoned && o.hp < o.maxHp && Math.abs(o.x - tgt.x) <= 70) {
-        o.hp = Math.min(o.maxHp, o.hp + amt * m.ripple);
+        o.hp = Math.min(o.maxHp, o.hp + base * m.ripple);
         G.fx.push({ type: 'heal', x: o.x, y: o.y, life: 0.7, dur: 0.6 });
       }
       Sound.play('heal');
@@ -2153,6 +2298,7 @@
       const air = u.fly ? flyH(u) + Math.sin(u.anim * 2.2 + u.id) * 6 : (u.jumpH || 0);
       const uy = u.y - lift - air;
       if (u.fly && !u.dead) { ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#05081a'; Art.ell(ctx, u.x, u.y, 18, 4); ctx.fill(); ctx.restore(); }
+      if (!u.dead && u.halfT > G.time) Art.glow(ctx, u.x, uy - 40, 46, 'rgba(160,205,255,A)', 0.5); // かばう背中 / 病室の約束
       if (!u.dead && (u.invul > 0 || u.blessT > 0)) Art.glow(ctx, u.x, uy - 34, 40, u.invul > 0 ? 'rgba(200,235,255,A)' : 'rgba(255,220,140,A)', 0.45);
       if (!u.dead && u.burnT > 0 && !u.hidden) Art.glow(ctx, u.x, uy - 30, 26, 'rgba(255,130,60,A)', 0.35);
       if (!u.dead && !u.hidden && (u.frozenT > 0 || u.slowT > 0)) Art.glow(ctx, u.x, uy - 30, u.frozenT > 0 ? 40 : 30, 'rgba(160,230,255,A)', u.frozenT > 0 ? 0.6 : 0.3);
@@ -2161,7 +2307,7 @@
       // (a kind without its own sprite yet falls back to a stand-in so the game never breaks)
       const want = u.toyT > 0 ? 'toy' : u.kind; // 異端の魔女のおもちゃの魔法: the resident is drawn as a little toy
       const dk = Art.KINDS.includes(want) ? want : u.toyT > 0 ? 'doll' : u.boss ? 'boss' : 'shade';
-      Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });
+      Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1) * growView(u), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });
       // 灯を喰らうもの: a translucent ghost of the boss whose memory it wears
       if (u.form && !u.dead && Art.KINDS.includes(u.form)) Art.drawUnit(ctx, u.form, u.x - 40, uy - (ENEMIES[u.form].flying ? 40 : 0), -1, { anim: u.anim, walk: false, atk: 0, hurt: 0, wind: 0, phase: 2, hp: 1, maxHp: 1, reveal: 1, fly: !!ENEMIES[u.form].flying, stance: u.stance }, { alpha: alpha * 0.42, enemy: true, noShadow: true });
       // ハンターの印: a small amber diamond over a marked enemy
@@ -2173,10 +2319,24 @@
       if (!u.dead && u.frozenT > 0 && !u.hidden) { ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#d9f6ff'; Art.rr(ctx, u.x - 18, uy - 62 * (Art.SIZE[u.kind] || 1), 36, 60 * (Art.SIZE[u.kind] || 1), 8); ctx.fill(); ctx.restore(); }
       if (!u.dead && !G.paused && u.songV > 0 && ((realT * 2 + u.id * 0.37) % 1) < 0.08) G.fx.push({ type: 'note', x: u.x + rand(-8, 8), y: u.y - 70, life: 1, dur: 0.9 });
       if (!u.dead && u.hp < u.maxHp && !u.boss && !u.hidden) {
-        const w = u.kind === 'armor' || u.elite ? 40 : u.kind === 'swarm' ? 20 : 30, top = uy - (TALL[u.kind] || 70) * (Art.SIZE[u.kind] || 1) * (u.elite ? 1.2 : 1);
+        const w = u.kind === 'armor' || u.elite ? 40 : u.kind === 'swarm' ? 20 : 30, top = uy - (TALL[u.kind] || 70) * (Art.SIZE[u.kind] || 1) * (u.elite ? 1.2 : 1) * growView(u);
         ctx.fillStyle = 'rgba(5,8,26,.75)'; ctx.fillRect(u.x - w / 2, top, w, 4);
         ctx.fillStyle = u.side === 'ally' ? '#8fd6ff' : '#e58cf0';
         ctx.fillRect(u.x - w / 2, top, w * (u.hp / u.maxHp), 4);
+      }
+      // 固有能力の数え: small dots over the resident; all lit = the next one is the special one
+      const I = u.side === 'ally' && !u.dead && !(u.toyT > 0) && INNATE[u.kind];
+      if (I && I.pips) {
+        const n = Math.min(I.pips, u.pipN || 0), full = n >= I.pips, gap = I.pips > 5 ? 5 : 6;
+        const py = uy - (TALL[u.kind] || 70) * (Art.SIZE[u.kind] || 1) * growView(u) - 9, px = u.x - (I.pips - 1) * gap / 2;
+        if (full) Art.glow(ctx, u.x, py, 14 + I.pips * 2, 'rgba(255,220,140,A)', 0.55 + 0.25 * Math.sin(realT * 8));
+        ctx.save();
+        for (let i = 0; i < I.pips; i++) {
+          ctx.fillStyle = i < n ? (full ? '#fff1c4' : '#ffd27a') : 'rgba(10,14,34,.55)';
+          ctx.strokeStyle = 'rgba(5,8,26,.7)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(px + i * gap, py, 2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
       }
     }
 
@@ -2190,10 +2350,15 @@
         ctx.strokeStyle = '#f2f6ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(6, 0); ctx.stroke();
         ctx.fillStyle = '#cfe9ff'; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(3, -3); ctx.lineTo(3, 3); ctx.fill();
         ctx.restore();
+      } else if (s.kind === 'bomb' && s.small) { // 三連発: a small firework shell with a coloured trail
+        const col = ['255,150,200', '150,220,255', '200,255,150'][Math.floor(s.arc) % 3];
+        ctx.save(); ctx.fillStyle = '#2a2236'; Art.circ(ctx, s.x, s.y, 4); ctx.fill(); ctx.restore(); Art.glow(ctx, s.x, s.y, 12, `rgba(${col},A)`, 0.9);
       } else if (s.kind === 'bomb') {
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.t * 8);
         ctx.fillStyle = '#2a2236'; Art.circ(ctx, 0, 0, 6.5); ctx.fill(); ctx.strokeStyle = '#e8b06a'; ctx.lineWidth = 1.5; Art.circ(ctx, 0, 0, 6.5); ctx.stroke();
         ctx.restore(); Art.glow(ctx, s.x + 4, s.y - 7, 10, 'rgba(255,200,110,A)', 0.9);
+      } else if (s.kind === 'bullet' && s.balloon) { // とっておきの一発: a water balloon
+        ctx.save(); ctx.fillStyle = 'rgba(120,190,255,.9)'; Art.ell(ctx, s.x, s.y, 6, 5); ctx.fill(); ctx.fillStyle = 'rgba(230,245,255,.9)'; Art.circ(ctx, s.x - 2, s.y - 2, 1.6); ctx.fill(); ctx.restore();
       } else if (s.kind === 'bullet') {
         ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,236,190,.95)'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(s.x - 9 * Math.sign(s.tx - s.x0 || 1), s.y); ctx.lineTo(s.x, s.y); ctx.stroke(); ctx.restore();
@@ -2289,6 +2454,7 @@
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         if (f.snipe) { Art.glow(ctx, f.x, f.y - 30, 26, 'rgba(255,230,170,A)', f.life * 0.8); }
         else {
+          if (f.big) { Art.glow(ctx, f.x, f.y, 40, 'rgba(255,236,170,A)', f.life * 0.8); ctx.strokeStyle = `rgba(255,240,200,${f.life})`; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(f.x, f.y, 34 + (1 - f.life) * 10, Math.PI * 0.8, Math.PI * 1.6); ctx.stroke(); }
           ctx.strokeStyle = `rgba(255,190,140,${f.life})`; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.arc(f.x, f.y, 26 + (1 - f.life) * 8, Math.PI * 0.85, Math.PI * 1.55); ctx.stroke();
           ctx.strokeStyle = `rgba(255,245,230,${f.life})`; ctx.lineWidth = 1.4;
@@ -2539,6 +2705,7 @@
 
   // test / QA hook (used by automated playtests; harmless in normal play)
   window.__yume = {
+    INNATE,
     get state() { return G; }, CONFIG, UNITS, ENEMIES, WAVES, DECK, BOSS, BOSSES, LANE, buildWave, waveBudget, tierOf, growth, rawBudget, forceBoss: null,
     start: startGame, startWave: (n) => startWave(n), summon, canSummon, toMenu: toTitle, BLESS, costOf, pick: (i) => pickBlessing(i), autoPick: null,
     step(dt) { if (!G || G.mode !== 'play') return; if (G.picking) pickBlessing(0); update(dt); },

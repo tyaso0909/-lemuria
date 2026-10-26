@@ -302,6 +302,7 @@
     const d = UNITS()[k], L = LORE[k] || {}, ch = A.save.chars[k];
     const desc = L.desc || (A.SHOP[k] && A.SHOP[k].desc) || '';
     const slots = ch ? ch.slots.slice(0, ch.open).filter(Boolean) : [];
+    const inn = window.__yume.INNATE && window.__yume.INNATE[k];
     const el = document.createElement('div');
     el.className = 'u-detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', d.name);
     el.innerHTML = `
@@ -314,6 +315,7 @@
         </aside>
         <div class="u-main">
           <section><h4>能力</h4><p>${escH(desc)}</p></section>
+          ${inn ? `<section><h4>固有能力</h4><p class="u-innate"><b>${escH(inn.name)}</b>${escH(inn.desc)}</p></section>` : ''}
           <section><h4>宿している能力</h4>${slots.length ? `<ul class="u-abil">${slots.map((s) => `<li class="r${s.r}"><i class="dot r${s.r}"></i><b>${escH(A.ABIL[s.id].name)}</b><span>${escH(A.format(s))}</span></li>`).join('')}</ul>` : '<p class="u-none">まだ能力を宿していない。能力ガチャで宿せる。</p>'}</section>
           <section><h4>夢のはなし</h4><p>${escH(L.bg || '')}</p></section>
           <section><h4>ショートストーリー</h4><p class="${L.story ? '' : 'u-none'}">${escH(L.story || NO_STORY)}</p></section>
