@@ -87,8 +87,8 @@
   Object.assign(UNITS, {
     // パラディン: heavy front line; allies within aura.r take aura.v less damage. Blocks the boss charge (armor)
     paladin:   { name: 'パラディン', cost: 5, cd: 8.0, hp: 520, atk: 16, rate: 1.2, range: 40, speed: 40, melee: true, armor: 0.3, aura: { r: 120, v: 0.15 } },
-    // ボマー（花火師）: lobs a bomb over the front (ground only): splash + small push back
-    pyro:      { name: 'ボマー', cost: 4, cd: 5.0, hp: 90, atk: 28, rate: 2.0, range: 260, speed: 48, shot: 'bomb', aoe: 90, knock: 14, noAir: true },
+    // 花火師: lobs a bomb over the front (ground only): splash + small push back
+    pyro:      { name: '花火師', cost: 4, cd: 5.0, hp: 90, atk: 28, rate: 2.0, range: 260, speed: 48, shot: 'bomb', aoe: 90, knock: 14, noAir: true },
     // エンジニア: places a turret on summon and repairs turrets nearby (does not attack)
     engineer:  { name: 'エンジニア', cost: 4, cd: 8.0, hp: 95, atk: 9, rate: 0.6, range: 200, speed: 48, support: true, turret: { hp: 120, life: 20, repair: 15, every: 1.2, rebuild: 6 }, atkLabel: '砲台の攻撃力', rateLabel: '砲台の攻撃間隔', fact: ['砲台', '20秒'] },
     // バーサーカー: the lower its HP, the harder and faster it hits (×(1+frenzy) at ≤30% HP); heals on a kill
@@ -864,7 +864,7 @@
       }
       let tgt = null, best = 1e9, back = null, backD = 1e9;
       for (const e of E) {
-        if (e.fly && (d.noAir || (!air && !e.lowFly && e.x > LANE.front + 90 && !(e.swoop > G.time)))) continue; // FIX-D + a flyer swooping to attack is in melee reach; ボマー never targets flyers
+        if (e.fly && (d.noAir || (!air && !e.lowFly && e.x > LANE.front + 90 && !(e.swoop > G.time)))) continue; // FIX-D + a flyer swooping to attack is in melee reach; 花火師 never targets flyers
         const dx = e.x - a.x;
         if (dx > -24) { if (dx < best) { best = dx; tgt = e; } }
         else if (-dx < backD) { backD = -dx; back = e; }
@@ -1040,7 +1040,7 @@
           drainTo(s.from, dealt);
           Sound.play('magic');
         } else if (s.kind === 'bomb') {
-          // ボマー: ground splash, small push back (not the boss), 足止め slows
+          // 花火師: ground splash, small push back (not the boss), 足止め slows
           G.fx.push({ type: 'boom', x: tx, y: ty + 30, life: 1, dur: 0.5, r: s.aoe, color: '255,190,110' });
           G.fx.push({ type: 'smoke', x: tx, y: ty + 36, life: 0.8, dur: 0.7 });
           let dealt = 0;
