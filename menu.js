@@ -255,6 +255,96 @@
   function factsHTML(k) { return unitFacts(k).map(([a, b]) => `<span><i>${a}</i>${b}</span>`).join(''); }
 
   // ---------------------------------------------------------------------
+  //  夢の住人の紹介（編成画面で長押し）。背景は【仮採用・ディレクター判断 2026-10-26】、ショートストーリーは未定（ユーザー）
+  //  どの住人も「誰かに忘れられてしまった夢」から生まれ、レムリアに流れ着いた（【確定】ユーザー方針）
+  // ---------------------------------------------------------------------
+  const LORE = {
+    swordsman: { desc: '安くてすぐに呼べる前衛。目の前の敵へまっすぐ斬りかかる。',
+      bg: '絵本を描くのが好きだった女の子が、物語の端にいつも描き足していた旅の剣士。主人公にはなれなかったけれど、どのページでも誰かを助けていた。女の子が絵を描かなくなると、剣士はページの外へこぼれ落ち、レムリアにたどり着いた。' },
+    guardian: { desc: '大きな盾で前に立ち、受けるダメージを35%減らす。前線の壁になる。',
+      bg: '雷の夜、弟をかばって布団をかぶった兄が思い描いた「何があっても崩れない盾」。弟が雷を怖がらなくなった頃、その盾のことは誰も覚えていなかった。それでも、誰かの前に立つことだけは忘れていない。' },
+    archer: { desc: '前衛の後ろから矢を放つ。空をすべる敵にも届く。',
+      bg: '森のそばに住んでいた子が、窓から見える木々に住まわせた狩人。引っ越しの日、窓の景色と一緒に置いていかれた。遠くを見つめる目だけは、今もあの窓辺のまま。' },
+    mage: { desc: '炎の玉を放ち、当たった周りの敵をまとめて焼く。',
+      bg: '冬の暖炉の前で、祖母の昔話を聞きながら孫が思い描いた火の魔法使い。祖母がいなくなり、暖炉に火が入らなくなって、魔法使いのことも忘れられた。その炎は今も、少しだけ温かい。' },
+    healer: { desc: '自分は戦わず、傷ついた味方を癒やし続ける。',
+      bg: '熱を出した夜、看病してくれる誰かを待ちながら子どもが夢見た「痛いのを消してくれる人」。熱が下がると、その人のことは夢と一緒に消えた。誰かが傷つくと、自然と手が伸びてしまう。' },
+    spearman: { bg: '運動会で旗を持つ係になった子が、旗竿を槍に見立てて夢見た衛兵。係が終わり、旗竿が倉庫に戻されると忘れられた。列の少し後ろから仲間を支えるのが好き。' },
+    icemage: { bg: '夏休み、かき氷を食べながら「世界ぜんぶ冷たくなればいいのに」と願った子の夢。夏が終わると、もう思い出されなかった。少し気まぐれで、少しさみしがり。' },
+    bard: { bg: '音楽の授業で初めてリコーダーを最後まで吹けた日に、少年が思い描いた旅の吟遊詩人。中学で楽器をやめ、歌も忘れられた。歌えば誰かが元気になると、今も信じている。' },
+    golem: { bg: '砂場で何日もかけて作った大きな砂の城の番人。雨で城が崩れた日、番人のことも忘れられた。動きは遅いが、守ると決めた場所からは決して退かない。' },
+    hunter: { bg: '図鑑が大好きな子が、まだ見ぬ鳥を探しに行くために思い描いた狩人。図鑑が本棚の奥で開かれなくなって忘れられた。空を何かが横切ると、今もつい目で追ってしまう。' },
+    sniper: { bg: '団地の屋上から町を眺めるのが好きだった子が、遠くの一点も見逃さない「目のいい人」として夢見た狙撃手。引っ越して屋上に上がれなくなり、忘れられた。じっと待つのが得意。' },
+    thunder: { bg: '雷が怖かった子が「雷を味方にできたら怖くない」と考えて生まれた魔法使い。雷が平気になると、もう呼ばれなくなった。大きな音を立てるのが、実は少し苦手。' },
+    ninja: { bg: '時代劇ごっこで、いつも押し入れから飛び出す役だった子の夢。ごっこ遊びの仲間が散り散りになって忘れられた。持っているのは手裏剣ではなくクナイ。' },
+    paladin: { bg: '長く入院していた子が、病室の窓の外に思い描いた白銀の守り手。退院の日、病室と一緒に置いていかれた。「守る」ことを、誰よりも大切にしている。' },
+    pyro: { bg: '夏祭りの花火を待ちながら「自分で打ち上げられたら」と思った子の夢から生まれた花火師。祭りが終わると忘れられた。爆発は派手だが、本人はいたって真面目。' },
+    engineer: { bg: '分解した目覚まし時計を元に戻せなかった子が、「何でも直せる人」として夢見た技師。新しい時計が来ると、その夢は引き出しの部品と一緒にしまわれた。壊れたものを見ると放っておけない。' },
+    berserker: { bg: '負けず嫌いの子が、泣きたいのを我慢していたときに夢見た「倒れても立ち上がる戦士」。大人になって泣けるようになり、忘れられた。傷つくほど強くなるのは、あの日の我慢の名残。' },
+    gunner: { bg: '夏の水鉄砲合戦で負け知らずだった子の夢。合戦の仲間がそれぞれの夏へ散っていき、水鉄砲は色あせた。撃つときは今も、ちょっと楽しそう。' },
+    crossbow: { bg: '工作好きの子が、割り箸と輪ゴムで作ったクロスボウから生まれた兵士。工作箱ごと片付けられて忘れられた。一本一本の矢を、今も手作りしている。' },
+    dollmaster: { bg: '人形たちと毎晩おしゃべりしていた子の夢。人形が棚の奥にしまわれた日に、一緒に忘れられた。人形たちのことを、今も「みんな」と呼ぶ。' },
+  };
+  const NO_STORY = 'この住人の物語は、まだ綴られていない。';
+  const escH = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // all numbers shown on the detail sheet (the same values the battle uses, before abilities)
+  function unitStats(k) {
+    const d = UNITS()[k], out = [['コスト', d.cost], ['再使用', d.cd + '秒'], ['HP', d.hp]];
+    if (d.heal) out.push(['回復量', d.heal], ['回復の間隔', d.rate + '秒']);
+    else if (d.song) out.push(['歌', `手数+${Math.round(d.song * 100)}%`]);
+    else { out.push([d.atkLabel || '攻撃力', d.atk], [d.rateLabel || '攻撃間隔', d.rate + '秒']); }
+    out.push(['射程', d.range], ['移動', d.speed]);
+    if (d.armor) out.push(['守り', `−${Math.round(d.armor * 100)}%`]);
+    return out;
+  }
+  function openUnitDetail(k) {
+    closeUnitDetail();
+    const d = UNITS()[k], L = LORE[k] || {}, ch = A.save.chars[k];
+    const desc = L.desc || (A.SHOP[k] && A.SHOP[k].desc) || '';
+    const slots = ch ? ch.slots.slice(0, ch.open).filter(Boolean) : [];
+    const el = document.createElement('div');
+    el.className = 'u-detail'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', d.name);
+    el.innerHTML = `
+      <div class="u-card">
+        <aside class="u-side">
+          <canvas></canvas>
+          <h3>${escH(d.name)}</h3>
+          <div class="u-role">${escH(roleOf(k))}</div>
+          <dl class="u-stats">${unitStats(k).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
+        </aside>
+        <div class="u-main">
+          <section><h4>能力</h4><p>${escH(desc)}</p></section>
+          <section><h4>宿している能力</h4>${slots.length ? `<ul class="u-abil">${slots.map((s) => `<li class="r${s.r}"><i class="dot r${s.r}"></i><b>${escH(A.ABIL[s.id].name)}</b><span>${escH(A.format(s))}</span></li>`).join('')}</ul>` : '<p class="u-none">まだ能力を宿していない。能力ガチャで宿せる。</p>'}</section>
+          <section><h4>夢の記憶</h4><p>${escH(L.bg || '')}</p></section>
+          <section><h4>ショートストーリー</h4><p class="${L.story ? '' : 'u-none'}">${escH(L.story || NO_STORY)}</p></section>
+        </div>
+        <button class="btn ghost small u-close" type="button">閉じる</button>
+      </div>`;
+    Art.drawCardArt(el.querySelector('canvas'), k, 200);
+    el.addEventListener('click', (ev) => { if (ev.target === el) closeUnitDetail(); });
+    el.querySelector('.u-close').addEventListener('click', () => { Sound.play('click'); closeUnitDetail(); });
+    $('teamScreen').appendChild(el);
+    el.querySelector('.u-close').focus();
+    Sound.play('reveal');
+  }
+  function closeUnitDetail() { const o = document.querySelector('.u-detail'); if (o) o.remove(); }
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.querySelector('.u-detail')) { e.stopPropagation(); closeUnitDetail(); } }, true);
+  // press and hold (or right-click) to open the detail sheet; a short tap keeps doing what the button does
+  function holdToInspect(el, k) {
+    let timer = 0, sx = 0, sy = 0;
+    const cancel = () => { clearTimeout(timer); timer = 0; el.classList.remove('holding'); };
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button > 0) return;
+      sx = e.clientX; sy = e.clientY; el.classList.add('holding');
+      timer = setTimeout(() => { timer = 0; el.classList.remove('holding'); el.dataset.held = '1'; openUnitDetail(k); }, 480);
+    });
+    el.addEventListener('pointermove', (e) => { if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 12) cancel(); });
+    for (const t of ['pointerup', 'pointerleave', 'pointercancel']) el.addEventListener(t, () => { if (timer) cancel(); });
+    el.addEventListener('click', (e) => { if (el.dataset.held) { e.stopImmediatePropagation(); e.preventDefault(); delete el.dataset.held; } }, true);
+    el.addEventListener('contextmenu', (e) => { e.preventDefault(); cancel(); openUnitDetail(k); });
+  }
+
+  // ---------------------------------------------------------------------
   //  Team (編成)
   // ---------------------------------------------------------------------
   let teamSel = 0;
@@ -265,7 +355,7 @@
     root.innerHTML = `
       <div class="roster">
         <header class="g-head">
-          <div><h2>編成</h2><p>戦闘で使う5枚のカードを選ぶ。枠を選んでから、下の住人を選んで入れ替える。</p></div>
+          <div><h2>編成</h2><p>戦闘で使う5枚のカードを選ぶ。枠を選んでから、下の住人を選んで入れ替える。住人を長押しすると詳しく見られる。</p></div>
           <div class="g-head-r"><button class="btn ghost small" id="tBack">戻る</button></div>
         </header>
         <div class="t-deck" id="tDeck"></div>
@@ -280,6 +370,7 @@
       b.innerHTML = `<span class="num">${i + 1}</span><canvas></canvas><span class="nm">${d.short || d.name}</span><span class="cost">${d.cost}</span>`;
       Art.drawCardArt(b.querySelector('canvas'), k, 132);
       b.addEventListener('click', () => { teamSel = i; Sound.play('click'); renderTeam(true); });
+      holdToInspect(b, k);
       dk.appendChild(b);
     });
     const pool = $('tPool');
@@ -299,6 +390,7 @@
         teamSel = Math.min(teamSel + 1, A.DECK_SIZE - 1);
         renderTeam(true);
       });
+      if (owned) holdToInspect(b, k);
       pool.appendChild(b);
     }
     $('tBack').addEventListener('click', () => { Sound.play('click'); showScreen('titleScreen'); });

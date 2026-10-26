@@ -385,8 +385,33 @@ html { background: #05081a; }
 .title-art .help { font-size: 13px; line-height: 1.75; color: #c3cdec; text-shadow: 0 1px 6px rgba(5,8,26,1); max-width: 520px; }
 .title-art .ver { position: absolute; right: auto; left: 22px; bottom: 14px; color: #c3cdec; opacity: .8; text-shadow: 0 1px 6px rgba(5,8,26,1); }
 
+
+/* ---------- Resident detail sheet (team screen, press and hold) — 2026-10-26 ---------- */
+.t-unit, .t-slot { -webkit-touch-callout: none; }
+.t-unit.holding, .t-slot.holding { transform: scale(.97); border-color: var(--lamp); transition: transform .45s ease-out, border-color .45s; }
+.u-detail { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(5,8,26,.78); backdrop-filter: blur(3px); }
+.u-card { position: relative; width: 1000px; height: 600px; box-sizing: border-box; display: grid; grid-template-columns: 300px 1fr; gap: 30px; padding: 30px 34px 28px;
+  background: linear-gradient(180deg, rgba(22,32,72,.97), rgba(10,14,36,.98)); border: 1px solid rgba(232,196,122,.45); border-radius: 22px; box-shadow: 0 0 60px rgba(143,214,255,.15); }
+.u-side { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
+.u-side canvas { width: 200px; height: 200px; border-radius: 16px; border: 1px solid rgba(143,214,255,.35); }
+.u-side h3 { margin: 6px 0 0; font-family: var(--f-display); font-size: 32px; font-weight: 800; letter-spacing: .1em; color: #fff3d6; }
+.u-role { font-size: 14px; color: var(--lamp); letter-spacing: .14em; }
+.u-stats { display: grid; grid-template-columns: auto auto; gap: 6px 22px; margin: 10px 0 0; font-size: 15px; width: 100%; }
+.u-stats dt { color: var(--mist); } .u-stats dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.u-main { min-height: 0; overflow-y: auto; padding-right: 8px; display: flex; flex-direction: column; gap: 16px; text-align: left; }
+.u-main section h4 { margin: 0 0 6px; font-family: var(--f-display); font-size: 18px; letter-spacing: .14em; color: var(--dream); border-bottom: 1px solid rgba(143,214,255,.2); padding-bottom: 4px; }
+.u-main section p { margin: 0; font-size: 15px; line-height: 1.85; color: var(--ink); }
+.u-main .u-none { color: var(--mist); font-style: normal; }
+.u-abil { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.u-abil li { display: flex; align-items: center; gap: 10px; font-size: 14px; } .u-abil b { min-width: 9em; } .u-abil span { color: var(--mist); }
+.u-close { position: absolute; right: 22px; top: 18px; }
+.u-main section:first-child h4 { margin-right: 120px; }
+
 /* Phones in landscape: the stage is scaled to ~0.5, so enlarge the text and touch targets inside it */
 @media (max-height: 520px) {
+  .u-card { width: 1180px; height: 660px; grid-template-columns: 330px 1fr; padding: 26px 30px; } .u-side canvas { width: 180px; height: 180px; }
+  .u-side h3 { font-size: 38px; } .u-role { font-size: 18px; } .u-stats { font-size: 19px; gap: 4px 20px; }
+  .u-main section h4 { font-size: 24px; } .u-main section p { font-size: 20px; line-height: 1.7; } .u-abil li { font-size: 18px; }
   .t-logo { top: 22px; } .t-logo .l1 { font-size: 112px; } .t-logo .l2 { font-size: 56px; } .t-logo .l3 { font-size: 90px; } .t-logo .eyebrow { font-size: 17px; } .t-logo .tagline { font-size: 22px; }
   .title-art .menu-wrap { width: 600px; right: 30px; bottom: 22px; } .title-art .menu { width: 100%; } .title-art .help { display: none; }
   .label { font-size: 20px; } .bar { height: 16px; }
@@ -432,6 +457,9 @@ html { background: #05081a; }
   .reward .br { font-size: 16px; } .res { font-size: 20px; }
 }
 /* Phones held upright: the game is shown turned sideways (html.rot), with the same enlarged phone layout */
+html.rot .u-card { width: 1180px; height: 660px; grid-template-columns: 330px 1fr; padding: 26px 30px; } html.rot .u-side canvas { width: 180px; height: 180px; }
+html.rot .u-side h3 { font-size: 38px; } html.rot .u-role { font-size: 18px; } html.rot .u-stats { font-size: 19px; gap: 4px 20px; }
+html.rot .u-main section h4 { font-size: 24px; } html.rot .u-main section p { font-size: 20px; line-height: 1.7; } html.rot .u-abil li { font-size: 18px; }
 html.rot .t-logo { top: 22px; } html.rot .t-logo .l1 { font-size: 112px; } html.rot .t-logo .l2 { font-size: 56px; } html.rot .t-logo .l3 { font-size: 90px; } html.rot .t-logo .eyebrow { font-size: 17px; } html.rot .t-logo .tagline { font-size: 22px; }
 html.rot .title-art .menu-wrap { width: 600px; right: 30px; bottom: 22px; } html.rot .title-art .menu { width: 100%; } html.rot .title-art .help { display: none; }
 html.rot .label { font-size: 20px; }
