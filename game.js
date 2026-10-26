@@ -7,8 +7,9 @@
   'use strict';
 
   // ---------------------------------------------------------------------
-  //  CONFIG（難易度調整 2026-10-24：普通のプレイで第6〜8ウェーブ、うまくいけば第9〜10ウェーブ到達を狙う）
-  //  QA3 2026-10-25：第11ウェーブ以降は「第2階層で一段下げて、W100までゆっくり上げる」線。能力枠が平均エピック＋レジェンド数個でW100に届く想定
+  //  CONFIG 難易度の目標（2026-10-26 ユーザー指定【確定】。能力は5人×4枠＝20枠の平均、開いていない枠はコモンより下。灯の祝福込み）
+  //   平均コモン：第10ウェーブ突破、第20〜30ウェーブ到達 / 平均レア：第40〜50 / 平均エピック：第60〜70 / エピック＋レジェンド少し：第80〜90突破、第100到達
+  //   第11ウェーブ以降は lateCurve の折れ線（第65まで急、その先はなだらか）。ボスも同じ線で伸びる（bossFollow）
   // ---------------------------------------------------------------------
   const CONFIG = {
     energyMax: 10,
@@ -22,7 +23,7 @@
     summonCap: 16,           // turrets and dolls on the field at once (they do not count toward allyCap)
     totalWaves: 100,         // 10 tiers of 10 waves; a boss closes each tier (long-term goal: wave 100)
     tierSize: 10,            // 階層 = 10 waves; new minion types join the draw per tier
-    budgetPerWave: 6.5,      // wave budget = max(budgetMin, budgetPerWave × n + budgetOffset)
+    budgetPerWave: 6.0,      // (2026-10-26 6.5→6.0: a Common team should clear W10) wave budget = max(budgetMin, budgetPerWave × n + budgetOffset)
     budgetOffset: -2,
     budgetMin: 5,
     bossEscort: 10,          // budget of the minions that come with a boss (grows per tier)
@@ -31,7 +32,7 @@
     eliteChance: 0.12,       // from the tier where elites unlock, each non-swarm draw may become elite (+eliteChancePerTier per tier after 3)
     eliteCost: 2.5, eliteHp: 2.5, eliteAtk: 1.5,
     bossTierHp: 0.2, bossTierAtk: 0, // boss stats × (1 + k × (tier − 1)) (QA3: was 1.5 / 0.6 — ATK stays flat: 2 slams at 42 must not kill a mage/archer)
-    hpGrowth: 0.32,          // enemy HP per wave in tier 1 (linear; was 0.25)
+    hpGrowth: 0.29,          // enemy HP per wave in tier 1 (linear; 2026-10-26 0.32→0.29 so a Common team clears W10; was 0.25)
     atkGrowth: 0.17,         // enemy ATK per wave in tier 1 (was 0.12)
     lateBudgetPerWave: 0.1,  // budget growth per wave after tier 1 (QA3: was 3 — budget 36 at W11 → 45 at W100)
     lateHpGrowth: 0.035,     // HP growth per wave after tier 1 (2026-10-25 灯の祝福に合わせて 0.0065→0.035; QA3: was 0.15)
@@ -48,6 +49,13 @@
     carryMax: 0,             // 0 = off. Unspawned leftovers carried into the next wave are capped at this many
     tierHeal: 0.25,           // share of the lighthouse's max HP restored when a tier boss is defeated
     finalBossHp: 1.6, finalBossAtk: 1, // extra multipliers for the W100 boss only
+    // ---- 2026-10-26 能力の平均レア度ごとの到達目標に合わせた後半の線（数値は仮）----
+    // set: enemy HP / ATK after wave 11 grow by this factor per wave (compounding) instead of the linear late*Growth
+    // lateCurve: [wave, HP×, ATK×] waypoints after tier 1, joined log-linearly (steep to ~W65, then a flat tail where small upgrades buy many waves)
+    lateCurve: [[11, 2.74, 2.0], [27, 5.25, 3.05], [45, 5.85, 3.25], [65, 7.29, 3.84], [100, 7.29, 3.84]],
+    lateHpMul: 0, lateAtkMul: 0,
+    bossFollow: true,        // tier bosses (from tier 2) scale with the same late HP curve as the minions (relative to wave 11); bossTierHp is then not added on top
+    bossFollowAtk: 0.5,      // …and with this power of the late ATK curve (bosses already hit hard; full scaling made W60+ bosses walls)
   };
 
   // Lane geometry (stage px)
@@ -394,7 +402,12 @@
     const isBoss = !!d.boss;
     const tier = tierOf(wave);
     const fin = isBoss && wave >= CONFIG.totalWaves; // the last boss (W100) is a notch above the tier line
-    const bHp = (1 + CONFIG.bossTierHp * (tier - 1)) * (fin ? CONFIG.finalBossHp || 1 : 1), bAtk = (1 + CONFIG.bossTierAtk * (tier - 1)) * (fin ? CONFIG.finalBossAtk || 1 : 1);
+    // bossFollow: from tier 2 the boss grows along the minions' late curve (relative to wave 11)
+    const lw = CONFIG.bossFollow && tier > 1 ? lateAt(wave) : null, l11 = lw && lateAt(CONFIG.tierSize + 1);
+    const fH = lw ? lw[0] / l11[0] : CONFIG.bossFollow && tier > 1 && CONFIG.lateHpMul ? Math.pow(CONFIG.lateHpMul, wave - CONFIG.tierSize - 1) : 1;
+    const fA = lw ? lw[1] / l11[1] : CONFIG.bossFollow && tier > 1 && CONFIG.lateAtkMul ? Math.pow(CONFIG.lateAtkMul, wave - CONFIG.tierSize - 1) : 1;
+    const tierHp = lw ? 1 : 1 + CONFIG.bossTierHp * (tier - 1), fA2 = lw ? Math.pow(fA, CONFIG.bossFollowAtk != null ? CONFIG.bossFollowAtk : 1) : fA;
+    const bHp = tierHp * fH * (fin ? CONFIG.finalBossHp || 1 : 1), bAtk = (1 + CONFIG.bossTierAtk * (tier - 1)) * fA2 * (fin ? CONFIG.finalBossAtk || 1 : 1);
     const eHp = elite ? CONFIG.eliteHp : 1, eAtk = elite ? CONFIG.eliteAtk : 1;
     const hp = isBoss ? d.hp * bHp : d.hp * hpMul * eHp;
     const e = {
@@ -419,11 +432,23 @@
     const T = CONFIG.tierSize, w1 = Math.min(wave, T) - 1, wl = Math.max(0, wave - T);
     const lh = CONFIG.lateHpGrowth != null ? CONFIG.lateHpGrowth : CONFIG.hpGrowth, la = CONFIG.lateAtkGrowth != null ? CONFIG.lateAtkGrowth : CONFIG.atkGrowth;
     let hpMul = 1 + CONFIG.hpGrowth * w1 + lh * wl, atkMul = 1 + CONFIG.atkGrowth * w1 + la * wl;
-    if (wl > 0 && CONFIG.lateHpStart != null) hpMul = CONFIG.lateHpStart + lh * (wl - 1);
-    if (wl > 0 && CONFIG.lateAtkStart != null) atkMul = CONFIG.lateAtkStart + la * (wl - 1);
+    const lc = wl > 0 && lateAt(wave);
+    if (lc) { hpMul = lc[0]; atkMul = lc[1]; }
+    else if (wl > 0 && CONFIG.lateHpStart != null) hpMul = CONFIG.lateHpMul ? CONFIG.lateHpStart * Math.pow(CONFIG.lateHpMul, wl - 1) : CONFIG.lateHpStart + lh * (wl - 1);
+    if (!lc && wl > 0 && CONFIG.lateAtkStart != null) atkMul = CONFIG.lateAtkMul ? CONFIG.lateAtkStart * Math.pow(CONFIG.lateAtkMul, wl - 1) : CONFIG.lateAtkStart + la * (wl - 1);
     const raw = rawBudget(wave), cap = CONFIG.lateBudgetCap;
     if (wl > 0 && cap > 0 && raw > cap) hpMul *= raw / cap;
     return { hpMul, atkMul };
+  }
+  // the late HP / ATK multipliers from CONFIG.lateCurve (null when no curve is set)
+  function lateAt(wave) {
+    const C = CONFIG.lateCurve; if (!C || !C.length) return null;
+    if (wave <= C[0][0]) return [C[0][1], C[0][2]];
+    for (let i = 1; i < C.length; i++) if (wave <= C[i][0]) {
+      const a = C[i - 1], b = C[i], t = (wave - a[0]) / (b[0] - a[0]);
+      return [a[1] * Math.pow(b[1] / a[1], t), a[2] * Math.pow(b[2] / a[2], t)];
+    }
+    const z = C[C.length - 1]; return [z[1], z[2]];
   }
   // budget the wave would have without the cap (boss waves use the last regular wave's line for the HP conversion)
   function rawBudget(n) {
