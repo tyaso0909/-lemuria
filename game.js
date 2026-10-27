@@ -339,7 +339,7 @@
       mods: Abilities.allMods(), cdMax: {}, seen: {}, bosses: 0, costAdj: {}, blessings: [], picking: false, offer: null,
       kills: 0, dream: 0, summoned: 0, lost: 0,
       cast: 0, shake: 0, bossRef: null, bossDown: false, endTimer: -1, outcome: null,
-      hazards: [], quakes: [], bossSeen: [], lastBoss: null, bossLog: [],
+      hazards: [], quakes: [], bossSeen: [], lastBoss: null, bossLog: [], shards: [], memRun: 0,
     };
     for (const k of DECK) G.cdMax[k] = UNITS[k].cd * (1 - (G.mods[k].recast || 0));
     showBanner('準備', '夢の住人を召喚して、追憶の灯を守れ', 2.6);
@@ -793,7 +793,10 @@
         G.bossDown = true; G.bosses++; G.spawnQueue.length = 0; G.hazards.length = 0; G.quakes.length = 0; G.lastBossName = u.def.name; G.curtain = 0; G.drainWarn = 0;
         (G.bossKilled = G.bossKilled || []).push(u.kind);
         if (u.belly) for (const b of u.belly.slice()) releaseBelly(u, b); // 夢鯨: everyone inside comes back out
-        showBanner(`${u.def.name}は光の粒となって消えた`, alive(G.enemies).length > 1 ? '残るナイトメアを退けろ' : '', 2.2);
+        // 記憶のかけら: the nightmare is gone; only a fragment of its memory remains (memories.js)
+        const mm = !G.scripted && window.Memories ? window.Memories.gain(u.kind, G.wave) : null;
+        if (mm) { G.memRun++; G.shards.push({ x: u.x, y: u.y - 110 - flyH(u), t: 0 }); }
+        showBanner(`${u.def.name}は光の粒となって消えた`, (mm ? `記憶のかけらが残った（${Math.min(3, mm.n)} / 3）` : '') + (alive(G.enemies).length > 1 ? (mm ? '　' : '') + '残るナイトメアを退けろ' : ''), 2.6);
         for (const a of G.allies) { a.hitByRun = false; a.hitByDash = false; }
         G.shake = 0.8; G.fx.push({ type: 'burst', x: u.x, y: u.y - 110 - flyH(u), life: 1, dur: 1.6 }); }
     } else {
@@ -1241,6 +1244,8 @@
       }
     }
     G.motes = G.motes.filter((m) => !m.done);
+    for (const sh of G.shards) sh.t += dt;
+    G.shards = G.shards.filter((sh) => sh.t < 2.6);
     for (const f of G.fx) f.life -= dt / f.dur;
     G.fx = G.fx.filter((f) => f.life > 0);
     for (const t of G.texts) { t.life -= dt; t.y -= 34 * dt; }
@@ -2371,6 +2376,17 @@
     }
 
     drawFalling();
+    // 記憶のかけら: rises from where the boss vanished, then drifts to the commander
+    for (const sh of G.shards) {
+      const t = sh.t, up = Math.min(1, t / 0.9), fly = Math.max(0, Math.min(1, (t - 1.1) / 1.2)), e = fly * fly * (3 - 2 * fly);
+      const x0 = sh.x, y0 = sh.y - 60 * up, tx = LANE.commanderX + 6, ty = LANE.commanderY - 70;
+      const x = x0 + (tx - x0) * e, y = y0 + (ty - y0) * e - Math.sin(e * Math.PI) * 120, a = t > 2.3 ? Math.max(0, (2.6 - t) / 0.3) : Math.min(1, t * 3);
+      Art.glow(ctx, x, y, 34, 'rgba(190,225,255,A)', 0.7 * a);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(t * 1.8); ctx.globalAlpha = a;
+      ctx.fillStyle = '#eaf6ff'; ctx.strokeStyle = 'rgba(120,180,255,.9)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(7, -2); ctx.lineTo(3, 12); ctx.lineTo(-6, 4); ctx.lineTo(-5, -6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
     // projectiles
     for (const s of G.shots) {
       if (s.t < 0) continue;
@@ -2628,6 +2644,7 @@
   let bannerTimer = 0;
   function showBanner(big, sub, dur, boss) {
     ui.bannerBig.textContent = big; ui.bannerSub.textContent = sub || '';
+    ui.bannerBig.classList.toggle('long', String(big).length > 15); // a long line (a boss's name + 「は光の粒となって消えた」) stays on one line
     ui.banner.classList.toggle('boss', !!boss); ui.banner.classList.add('show');
     bannerTimer = dur;
   }
@@ -2706,6 +2723,7 @@
       ['討伐数', G.kills],
       ['召喚した住人', G.summoned],
       ['灯の祝福', G.blessings.length ? `${G.blessings.length}つ` : '―'],
+      ['記憶のかけら', G.memRun ? `${G.memRun}つ` : '―'],
       ['経過時間', fmtTime(G.time)],
     ];
     $('resList').innerHTML = rows.map(([a, b], i) => `<dt>${a}</dt><dd>${b}${i === 0 && better ? '<span class="new">ベスト更新</span>' : ''}</dd>`).join('');

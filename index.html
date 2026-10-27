@@ -123,6 +123,7 @@ html { background: #05081a; }
 }
 .banner.show { opacity: 1; }
 .banner .big { font-size: 64px; font-weight: 800; letter-spacing: .12em; text-shadow: 0 0 24px rgba(143,214,255,.55), 0 4px 18px #000; }
+.banner .big.long { font-size: 46px; letter-spacing: .08em; }
 .banner .sub { font-family: var(--f-ui); font-size: 18px; color: var(--mist); margin-top: 6px; letter-spacing: .1em; text-shadow: 0 2px 8px #000; }
 .banner.boss .big { color: #ffd9e6; text-shadow: 0 0 30px rgba(196,139,240,.8), 0 4px 18px #000; }
 
@@ -631,6 +632,53 @@ html.rot .vn-box { min-height: 230px; padding: 40px 50px 30px; } html.rot .vn-te
 html.rot .vn-log-list p { font-size: 24px; } html.rot .vn-log-list b { font-size: 18px; }
 html.rot .rp-item { min-height: 80px; } html.rot .rp-item b { font-size: 26px; } html.rot .rp-item span { font-size: 18px; }
 html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 28px; } html.rot .coach-foot { font-size: 18px; } html.rot .coach-skip { height: 48px; font-size: 17px; bottom: 180px; }
+
+/* ---------- 記憶のかけら — 2026-10-27 ---------- */
+#titleScreen.tap-mode .t-mem { display: none; }
+.t-mem { left: 158px; border-color: rgba(170,210,255,.5); color: #cfe6ff; }
+.t-replay.notify::after { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--lamp); box-shadow: 0 0 10px var(--lamp); }
+.mem-screen { justify-content: flex-start; padding: 26px 40px; gap: 18px; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(40,60,120,.55), rgba(5,8,26,.92)), rgba(5,8,26,.86); }
+.mem-head { width: 100%; display: grid; grid-template-columns: auto auto 1fr auto; align-items: baseline; gap: 6px 18px; }
+.mem-head h2 { margin: 0; font: 800 38px var(--f-display); letter-spacing: .14em; color: #e9f3ff; text-shadow: 0 0 22px rgba(150,200,255,.45); }
+.mem-count { font: 700 18px var(--f-display); color: #cfe6ff; font-variant-numeric: tabular-nums; }
+.mem-head p { margin: 0; grid-column: 1 / 4; font-size: 15px; color: var(--mist); letter-spacing: .06em; }
+.mem-head .btn { grid-column: 4; grid-row: 1 / 3; align-self: center; }
+.mem-grid { width: 100%; display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; }
+.mem-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px 10px; border-radius: 14px; background: linear-gradient(180deg, rgba(30,44,90,.7), rgba(10,14,36,.85)); border: 1px solid rgba(150,200,255,.28); color: var(--ink); cursor: pointer; }
+.mem-card:hover:not(:disabled) { border-color: #cfe6ff; box-shadow: 0 0 18px rgba(150,200,255,.3); }
+.mem-card canvas { width: 140px; height: 140px; }
+.mem-card b { font: 800 15px var(--f-display); letter-spacing: .06em; text-align: center; min-height: 2.6em; display: flex; align-items: center; }
+.mem-card.locked { cursor: default; background: rgba(10,14,36,.7); border-color: rgba(147,163,207,.18); }
+.mem-card.locked b { color: #66708f; }
+.mem-card.new::after { content: "NEW"; position: absolute; top: 8px; right: 8px; font: 800 11px var(--f-display); letter-spacing: .1em; color: #06122a; background: var(--lamp); border-radius: 8px; padding: 1px 7px; }
+.pips { display: inline-flex; gap: 5px; }
+.pips i { width: 9px; height: 13px; clip-path: polygon(50% 0, 100% 35%, 70% 100%, 30% 100%, 0 35%); background: rgba(147,163,207,.3); }
+.pips i.on { background: #dff0ff; box-shadow: 0 0 8px #9fd3ff; }
+.pips.big i { width: 14px; height: 20px; }
+.mem-detail { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background: rgba(5,8,26,.8); backdrop-filter: blur(3px); }
+.mem-sheet { position: relative; width: 1120px; max-height: 660px; display: grid; grid-template-columns: 330px 1fr; gap: 30px; padding: 30px 36px; border-radius: 20px; background: linear-gradient(180deg, rgba(18,28,64,.97), rgba(8,12,32,.98)); border: 1px solid rgba(170,210,255,.4); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.mem-sheet aside { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.mem-sheet aside canvas { width: 260px; height: 260px; border-radius: 16px; background: radial-gradient(circle at 50% 60%, rgba(120,170,255,.22), rgba(5,8,26,0) 70%); }
+.mem-sheet h3 { margin: 0; font: 800 30px var(--f-display); letter-spacing: .08em; color: #eef6ff; }
+.mem-k { font-size: 14px; color: #cfe6ff; letter-spacing: .08em; }
+.mem-sheet dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 8px 0 0; font-size: 15px; text-align: left; }
+.mem-sheet dt { color: var(--mist); } .mem-sheet dd { margin: 0; font-weight: 700; }
+.mem-main { min-height: 0; overflow-y: auto; padding-right: 8px; display: flex; flex-direction: column; gap: 16px; text-align: left; }
+.mem-main section h4 { margin: 0 0 6px; font: 800 18px var(--f-display); letter-spacing: .14em; color: #bfe0ff; border-bottom: 1px solid rgba(170,210,255,.22); padding-bottom: 4px; }
+.mem-main section p { margin: 0; font: 16px/1.95 var(--f-display); color: var(--ink); letter-spacing: .04em; }
+.mem-main .mem-sub { color: #f1d79a; }
+.mem-main section.sealed h4 { color: #6a7596; } .mem-main section.sealed p { color: #6a7596; font-size: 14px; }
+.mem-close { position: absolute; top: 18px; right: 22px; }
+@media (max-height: 520px) {
+  .t-mem { left: 196px; }
+  .mem-head h2 { font-size: 46px; } .mem-head p { font-size: 19px; } .mem-count { font-size: 24px; }
+  .mem-card b { font-size: 19px; } .mem-card canvas { width: 150px; height: 150px; }
+  .mem-sheet { height: 680px; max-height: 680px; } .mem-main section h4 { font-size: 24px; } .mem-main section p { font-size: 22px; } .mem-sheet dl { font-size: 19px; } .mem-k { font-size: 18px; }
+}
+html.rot .t-mem { left: 196px; }
+html.rot .mem-head h2 { font-size: 46px; } html.rot .mem-head p { font-size: 19px; } html.rot .mem-count { font-size: 24px; }
+html.rot .mem-card b { font-size: 19px; } html.rot .mem-card canvas { width: 150px; height: 150px; }
+html.rot .mem-sheet { height: 680px; max-height: 680px; } html.rot .mem-main section h4 { font-size: 24px; } html.rot .mem-main section p { font-size: 22px; } html.rot .mem-sheet dl { font-size: 19px; } html.rot .mem-k { font-size: 18px; }
 </style>
 </head>
 <body>
@@ -671,6 +719,7 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
     <div class="screen title-art tap-mode" id="titleScreen">
       <div class="crystal-pill" id="menuCrystals"></div>
       <button class="t-replay" id="replayBtn" type="button">ふりかえり</button>
+      <button class="t-replay t-mem" id="memoryBtn" type="button">記憶のかけら</button>
       <button class="tap-start" id="tapStart" type="button" aria-label="タップしてはじめる"><span>TAP TO START<small>タップしてはじめる</small></span></button>
       <header class="t-logo">
         <div class="eyebrow">LEMURIA &amp; THE STARLESS SEA</div>
@@ -708,6 +757,12 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
         </div>
         <button class="danger-link" id="resetBtn">セーブデータを消去</button>
       </div>
+    </div>
+
+    <div class="screen dim mem-screen" id="memoryScreen" hidden>
+      <div class="mem-head"><h2>記憶のかけら</h2><span class="mem-count" id="memCount"></span><p>退けたナイトメアは光の粒となって消え、記憶のかけらだけが残る。集めるほど、その夢の記憶が読めるようになる。</p><button class="btn small" id="memBack" type="button">戻る</button></div>
+      <div class="mem-grid" id="memList"></div>
+      <div class="mem-detail" id="memDetail" hidden></div>
     </div>
 
     <div class="screen dim" id="replayScreen" hidden>
@@ -781,6 +836,7 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
 <script src="story.js"></script>
 <script src="vn.js"></script>
 <script src="tutorial.js"></script>
+<script src="memories.js"></script>
 
 </body>
 </html>
