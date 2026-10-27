@@ -27,6 +27,24 @@
     'snowman', 'snowlet', 'friend', 'friendkid', 'astro', 'wheel', 'batter', 'siren', 'throne', 'clock', 'whale', 'devourer',
     'witch', 'toy', 'dancer', 'postman', 'letter', 'express'];
   const images = {};
+  // hand-drawn frame sprites (sprites.js): kind → { el, ready, px, frames: {name: [sx, sy, w, h, ax, ay]}, pick(u) → name }
+  const SPRITES = {};
+  function useSprite(kind, def) {
+    const el = new Image();
+    const rec = Object.assign({ el, ready: false }, def);
+    el.onload = () => { rec.ready = true; };
+    el.src = def.src; SPRITES[kind] = rec;
+  }
+  function spriteFrame(kind, u) {
+    const S = SPRITES[kind];
+    if (!S || !S.ready) return null;
+    const f = S.frames[S.pick(u)];
+    return f ? { S, f } : null;
+  }
+  function drawSprite(ctx, sp) {
+    const { S, f } = sp, k = 1 / S.px;
+    ctx.drawImage(S.el, f[0], f[1], f[2], f[3], -f[4] * k, -f[5] * k, f[2] * k, f[3] * k);
+  }
 
   // ---------- small helpers (public) ----------
   function rr(ctx, x, y, w, h, r) {
@@ -7425,8 +7443,8 @@
   const AURA = { runner: [-16, 34], armor: [-32, 46], swarm: [-13, 16], charger: [-26, 44], bomber: [-24, 30], flyer: [-20, 36], weaver: [-44, 46], bell: [-36, 36], mender: [-32, 36], snowlet: [-22, 26], friendkid: [-30, 30], letter: [-20, 22], express: [-22, 40] };
   const TALL = { swarm: 28, runner: 30, charger: 50, bomber: 44, flyer: 30, armor: 96, weaver: 78, snowlet: 50, friendkid: 76, letter: 34, express: 36 };
   let flashCv = null, flashCtx = null;
-  function drawFlashed(ctx, kind, u, img, hurt) {
-    const b = BOUNDS[kind] || [-40, -90, 40, 6];
+  function drawFlashed(ctx, kind, u, img, hurt, sp) {
+    const b = sp ? [-sp.f[4] / sp.S.px, -sp.f[5] / sp.S.px, (sp.f[2] - sp.f[4]) / sp.S.px, (sp.f[3] - sp.f[5]) / sp.S.px] : (BOUNDS[kind] || [-40, -90, 40, 6]);
     const m = ctx.getTransform();
     const D = Math.min(4, Math.hypot(m.a, m.b) || 1);
     const w = Math.ceil((b[2] - b[0]) * D) + 2, h = Math.ceil((b[3] - b[1]) * D) + 2;
@@ -7437,7 +7455,7 @@
     o.clearRect(0, 0, w, h);
     o.setTransform(D, 0, 0, D, -b[0] * D, -b[1] * D);
     o.lineJoin = 'round';
-    if (img && img.ready) o.drawImage(img.el, -img.w * img.ax, -img.h * img.ay, img.w, img.h); else DRAW[kind](o, u);
+    if (sp) drawSprite(o, sp); else if (img && img.ready) o.drawImage(img.el, -img.w * img.ax, -img.h * img.ay, img.w, img.h); else DRAW[kind](o, u);
     o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1;
     o.globalCompositeOperation = 'source-atop';
     o.fillStyle = `rgba(255,255,255,${Math.min(0.85, hurt * 0.8).toFixed(3)})`; o.fillRect(0, 0, w, h);
@@ -7457,7 +7475,8 @@
     if (!opts.noShadow && kind !== 'boss') { ctx.fillStyle = 'rgba(0,0,14,.42)'; ell(ctx, 0, 0, (SHADOW[kind] || 15) * s, 3.8 * s); ctx.fill(); }
     if (kind === 'boss' && !opts.noShadow) { ctx.fillStyle = 'rgba(0,0,12,.4)'; ell(ctx, 0, 0, 74 * s, 12 * s); ctx.fill(); }
     ctx.scale(dir * s, s);
-    const lunge = u.atk > 0 ? Math.sin((1 - u.atk) * Math.PI) * (BIG[kind] ? 10 : 5) : 0;
+    const sp = spriteFrame(kind, u);   // a hand-drawn sheet carries its own lunge
+    const lunge = !sp && u.atk > 0 ? Math.sin((1 - u.atk) * Math.PI) * (BIG[kind] ? 10 : 5) : 0;
     ctx.translate(lunge, 0);
     // hurt squash
     if (u.hurt > 0) { const q = u.hurt * 0.07; ctx.scale(1 + q, 1 - q); }
@@ -7502,7 +7521,9 @@
     const img = images[kind];
     if (u.hurt > 0.02 && !opts.noFlash) {
       // hurt flash: draw once into a shared offscreen, tint white with source-atop (no ctx.filter)
-      drawFlashed(ctx, kind, u, img, u.hurt);
+      drawFlashed(ctx, kind, u, img, u.hurt, sp);
+    } else if (sp) {
+      drawSprite(ctx, sp);
     } else if (img && img.ready) {
       ctx.drawImage(img.el, -img.w * img.ax, -img.h * img.ay, img.w, img.h);
     } else {
@@ -7539,6 +7560,9 @@
   };
   // cssSize: displayed size in stage px (defaults to the 112px battle card); drawing stays in 112-unit space
   function drawCardArt(canvas, kind, cssSize) {
+    // a frame sprite still loading: draw now with the old art, and again once it arrives
+    const S = SPRITES[kind];
+    if (S && !S.ready) S.el.addEventListener('load', () => drawCardArt(canvas, kind, cssSize), { once: true });
     const dpr = Math.min(3, window.devicePixelRatio || 1) * 1.5 * ((cssSize || 112) / 112);
     canvas.width = 112 * dpr; canvas.height = 112 * dpr;
     const c = canvas.getContext('2d');
@@ -7686,5 +7710,5 @@
     el.src = url; images[kind] = rec;
   }
 
-  window.Art = { SIZE, KINDS, drawBackground, drawLighthouse, drawCommander, drawUnit, drawCardArt, drawSummonCircle, drawTelegraph, useImage, LH, glow, circ, ell, rr };
+  window.Art = { SIZE, KINDS, drawBackground, drawLighthouse, drawCommander, drawUnit, drawCardArt, drawSummonCircle, drawTelegraph, useImage, useSprite, LH, glow, circ, ell, rr };
 })();
