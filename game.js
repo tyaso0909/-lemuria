@@ -1444,6 +1444,7 @@
       G.motes.push({ x: a.x + rand(-8, 8), y: a.y - a.jumpH - rand(20, 50), vx: rand(-30, 10), vy: rand(-20, 20), life: rand(0.3, 0.6), max: 0.6, color: '255,170,120', kind: 'spark' });
       if (p >= 1) {
         a.leapT = null; a.jumpH = 0; a.hunt = a.leapTgt; a.leapTgt = null;
+        G.fx.push({ type: 'smoke', x: a.x, y: a.y, life: 1, dur: 0.6 });
         let t = a.hunt && !a.hunt.dead && Math.abs(a.hunt.x - a.x) < 90 ? a.hunt : null;
         if (!t) for (const e of E) if (!e.dead && !e.fly && Math.abs(e.x - a.x) < 80 && (!t || Math.abs(e.x - a.x) < Math.abs(t.x - a.x))) t = e;
         if (t) {
@@ -1489,6 +1490,7 @@
         a.leapTo = Math.min(L.maxX + 40, t.x + 30 + rand(-12, 12)); a.leapTgt = t;
         a.leapDur = L.time + Math.abs(a.leapTo - a.x) / 2400;
         a.invul = Math.max(a.invul, a.leapDur);
+        G.fx.push({ type: 'smoke', x: a.x, y: a.y, life: 1, dur: 0.7 });   // どろん
         Sound.play('leap');
         return true;
       }
