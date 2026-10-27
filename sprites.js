@@ -121,5 +121,27 @@
     },
   };
   Art.useSprite('spearman', SPEAR);
-  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR }[k] || SWORD).pick(u);   // (test hook)
+
+  // ゴーレム（2026-10-27 ユーザー提供のコマ絵 2枚：待機・歩き／攻撃）
+  //   idle1〜4: 待機（砂がこぼれる）、idle5〜8: 歩き（砂が舞う）
+  //   atk1: 構え、atk2〜5: かがむ→両腕を振り上げる→叩きつける、atk6: 砂しぶき、atk7〜8: 戻る
+  //   固有能力「育つ城」は、コマ絵ではなく体が少しずつ大きくなるだけ（game.js の growView）
+  const GOLEM = {
+    src: 'sprites/golem.webp',
+    px: 2.5,
+    frames: {"idle1":[0,0,217,288,107.1,283.0],"idle2":[219,0,217,288,108.3,284.2],"idle3":[438,0,218,290,115.6,286.0],"idle4":[658,0,218,288,110.1,283.6],"idle5":[878,0,220,282,97.5,270.9],"idle6":[1100,0,220,279,80.6,265.5],"idle7":[0,292,220,281,100.8,269.7],"idle8":[222,292,220,278,89.0,264.3],"atk1":[444,292,223,287,102.9,282.8],"atk2":[669,292,223,267,106.0,262.9],"atk3":[894,292,227,275,102.9,271.0],"atk4":[1123,292,221,287,105.4,282.8],"atk5":[0,581,224,255,97.9,251.1],"atk6":[226,581,227,246,106.3,230.0],"atk7":[455,581,227,269,104.7,258.6],"atk8":[684,581,223,280,103.2,274.1]},
+    pick(u) {
+      const mv = walking(u), t = u.anim || 0, at = u.atk || 0;
+      if (at > 0.01) { u.sprFight = t; return 'atk' + (at > 0.6 ? 6 : at > 0.25 ? 7 : 8); }
+      if (!mv && u.sprFight != null && t - u.sprFight < 3) {
+        const W = 0.6;
+        if (u.cool > 0 && u.cool <= W) return 'atk' + Math.min(5, 2 + Math.floor((1 - u.cool / W) * 4));
+        return 'atk1';
+      }
+      if (mv) return 'idle' + (5 + Math.floor(t * 5) % 4);      // ずしん、ずしん
+      return 'idle' + (1 + Math.floor((t + (u.id || 0) * 0.7) * 2.5) % 4);
+    },
+  };
+  Art.useSprite('golem', GOLEM);
+  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM }[k] || SWORD).pick(u);   // (test hook)
 })();

@@ -938,6 +938,7 @@
       // 封（郵便屋の手紙・影の手）: cannot attack for a while. おもちゃ（魔女）: cannot act at all, and nightmares walk past it
       if (a.sealT > 0) { a.sealT -= dt; a.cool = Math.max(a.cool, 0.1); }
       if (a.toyT > 0) { if (a.invul > 0) a.invul -= dt; a.toyT -= dt; a.anim += dt; a.walk = false; a.atk = 0; a.hurt = Math.max(0, a.hurt - dt * 4); continue; }
+      if (a.kind === 'golem') { const g = a.growV || 1; a.growV = g + (1 + INNATE.golem.step * (a.innS || 0) - g) * Math.min(1, dt * 2.5); }
       a.anim += dt; a.atk = Math.max(0, a.atk - dt * 3); a.hurt = Math.max(0, a.hurt - dt * 4); a.cool -= dt * (1 + a.songV + (a.frenzyV || 0) * 0.5 + (a.rallyV || 0)) * (a.dazeT > 0 ? 0.5 : 1) * (1 - a.chill) * (a.sealT > 0 ? 0 : 1);
       if (a.invul > 0) a.invul -= dt;
       // 砲台 runs out after its life; 眠り人形 slowly fades
@@ -1256,9 +1257,9 @@
 
   const FLY_H = 80;
   // sprite heights for the HP bar and the hunter's mark (× Art.SIZE)
-  const TALL = { armor: 90, golem: 92, mage: 86, icemage: 86, thunder: 86, sniper: 76, hunter: 76, ninja: 70, paladin: 92, pyro: 74, engineer: 74, berserker: 84, gunner: 76, crossbow: 78, dollmaster: 74, doll: 46, turret: 46, weaver: 84, charger: 62, swarm: 40, flyer: 48, bomber: 56, bell: 72, mender: 74, spitter: 70 };
+  const TALL = { armor: 90, golem: 104, mage: 86, icemage: 86, thunder: 86, sniper: 76, hunter: 76, ninja: 70, paladin: 92, pyro: 74, engineer: 74, berserker: 84, gunner: 76, crossbow: 78, dollmaster: 74, doll: 46, turret: 46, weaver: 84, charger: 62, swarm: 40, flyer: 48, bomber: 56, bell: 72, mender: 74, spitter: 70 };
   const flyH = (u) => u.fly ? (u.lowFly ? 34 : FLY_H) : 0;
-  const growView = (u) => u.kind === 'golem' ? 1 + 0.03 * (u.innS || 0) : 1; // 育つ城: the golem grows a little
+  const growView = (u) => u.kind === 'golem' ? (u.growV || 1) : 1; // 育つ城: the golem grows a little (eased toward 1 + 4% per step, see the ally loop)
   const hitY = (u) => u.y - 30 - flyH(u);
   function enemyFire(e, tgt, kind, mul, y0off) {
     const x0 = e.x - 14, y0 = e.y - (y0off || 34);
