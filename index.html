@@ -561,6 +561,12 @@ html.rot .res { font-size: 20px; }
 .vn canvas, .vn .vn-photo, .vn .vn-fade { position: absolute; inset: 0; width: 100%; height: 100%; }
 .vn .vn-photo { background: #05081a url("title.jpg") center / cover no-repeat; opacity: 0; transition: opacity .6s; }
 .vn .vn-photo.on { opacity: 1; }
+.vn .vn-bgimg { position: absolute; inset: 0; background: #000 center / cover no-repeat; opacity: 0; transition: opacity .6s; }
+.vn .vn-bgimg.on { opacity: 1; }
+.vn .vn-chars { position: absolute; inset: 0; pointer-events: none; }
+.vn .vn-chars img { position: absolute; bottom: 0; height: 660px; max-width: 70%; object-fit: contain; object-position: bottom; transform: translateX(-50%); opacity: 0; transition: opacity .35s, filter .25s; }
+.vn .vn-chars img.on { opacity: 1; }
+.vn .vn-chars img.dim { filter: brightness(.55); }
 .vn .vn-fade { background: #000; opacity: 0; pointer-events: none; transition: opacity .45s; }
 .vn .vn-fade.on { opacity: 1; }
 .vn.shake { animation: vnShake .45s linear; }
@@ -751,6 +757,8 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
     <div class="screen vn" id="vnScreen" hidden>
       <canvas id="vnCv" width="1280" height="720"></canvas>
       <div class="vn-photo" id="vnPhoto"></div>
+      <div class="vn-bgimg" id="vnBgImg"></div>
+      <div class="vn-chars" id="vnChars"></div>
       <div class="vn-fade" id="vnFade"></div>
       <div class="vn-bar"><span class="vn-chap" id="vnChap"></span><button class="vn-b" id="vnLogBtn" type="button">ログ</button><button class="vn-b" id="vnAutoBtn" type="button">オート</button><button class="vn-b" id="vnSkipBtn" type="button">スキップ</button></div>
       <div class="vn-box" id="vnBox"><div class="vn-name" id="vnName"></div><div class="vn-text" id="vnText"></div><i class="vn-next"></i></div>

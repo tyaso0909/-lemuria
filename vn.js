@@ -12,6 +12,9 @@
   // ---------------------------------------------------------------- parse
   const BG_NAMES = { 灯台: 'tower', 海: 'sea', 工房: 'shop', 夜空: 'sky', 黒: 'black', 暗闇: 'black' };
   const SFX = { 警報: 'boss', 鐘: 'bell', 召喚: 'summon', 決定: 'click', 波: 'wave' };
+  // images registered in the scenario editor (story.js: window.STORY_IMAGES = { 名前: { kind: 'bg'|'char', src, who } })
+  const IMG = window.STORY_IMAGES || {};
+  const POS = ['左', '中央', '右'], POSX = { 左: 25, 中央: 50, 右: 75 };
   function parse(text) {
     const chapters = [];
     let ch = null;
@@ -25,7 +28,9 @@
       const d = line.match(/^[\[［]\s*(.+?)\s*[\]］]$/);
       if (d) {
         const [key, ...rest] = d[1].split(/[\s　：:]+/); const arg = rest.join(' ');
-        if (key === '背景') { if (BG_NAMES[arg]) ch.lines.push({ t: 'bg', bg: BG_NAMES[arg] }); }
+        if (key === '背景') { if (BG_NAMES[arg]) ch.lines.push({ t: 'bg', bg: BG_NAMES[arg] }); else if (IMG[arg]) ch.lines.push({ t: 'bg', bg: 'img', src: IMG[arg].src }); }
+        else if (key === '人物') { const m = IMG[rest[0]]; if (m) ch.lines.push({ t: 'char', src: m.src, who: m.who || '', pos: POS.includes(rest[1]) ? rest[1] : '中央' }); }
+        else if (key === '人物を消す') ch.lines.push({ t: 'charoff', pos: POS.includes(rest[0]) ? rest[0] : '全員' });
         else if (key === '暗転') ch.lines.push({ t: 'fade' });
         else if (key === '揺れ') ch.lines.push({ t: 'shake' });
         else if (key === '音') { if (SFX[arg]) ch.lines.push({ t: 'sfx', name: SFX[arg] }); }
@@ -107,7 +112,21 @@
     stepText(t);
     raf = requestAnimationFrame(tick);
   }
-  function setBg(name) { bg = name; photo.classList.toggle('on', name === 'tower'); }
+  const bgImg = $('vnBgImg'), charsEl = $('vnChars');
+  function setBg(name, src) {
+    bg = name; photo.classList.toggle('on', name === 'tower');
+    if (name === 'img' && src) { bgImg.style.backgroundImage = `url("${src}")`; bgImg.classList.add('on'); } else bgImg.classList.remove('on');
+  }
+  function setChar(pos, src, who) {
+    let img = charsEl.querySelector(`img[data-pos="${pos}"]`);
+    if (!img) { img = document.createElement('img'); img.alt = ''; img.dataset.pos = pos; img.style.left = POSX[pos] + '%'; charsEl.appendChild(img); }
+    img.dataset.who = who || ''; img.src = src; requestAnimationFrame(() => img.classList.add('on'));
+  }
+  function clearChar(pos) { for (const img of charsEl.querySelectorAll('img')) if (pos === '全員' || img.dataset.pos === pos) { img.classList.remove('on'); setTimeout(() => img.remove(), 360); } }
+  function focusSpeaker(name) {
+    const imgs = [...charsEl.querySelectorAll('img')], any = imgs.some((i) => i.dataset.who && i.dataset.who === name);
+    for (const i of imgs) i.classList.toggle('dim', !!name && any && i.dataset.who !== name);
+  }
 
   // ---------------------------------------------------------------- player
   const scr = $('vnScreen'), box = $('vnBox'), nameEl = $('vnName'), textEl = $('vnText'), logEl = $('vnLog'), logList = $('vnLogList');
@@ -116,7 +135,7 @@
   function play(chapter, o) {
     cur = chapter; idx = 0; opts = o || {}; open = true; busy = false;
     logList.innerHTML = ''; logEl.hidden = true; autoOn = false; $('vnAutoBtn').classList.remove('on');
-    $('vnChap').textContent = chapter.title; setBg('black'); fadeEl.classList.remove('on');
+    $('vnChap').textContent = chapter.title; setBg('black'); charsEl.innerHTML = ''; fadeEl.classList.remove('on');
     nameEl.textContent = ''; textEl.textContent = ''; box.classList.remove('done');
     scr.hidden = false;
     if (!raf) { t0 = performance.now(); raf = requestAnimationFrame(tick); }
@@ -132,7 +151,9 @@
     if (!cur || busy) return;
     while (idx < cur.lines.length) {
       const L = cur.lines[idx++];
-      if (L.t === 'bg') { setBg(L.bg); continue; }
+      if (L.t === 'bg') { setBg(L.bg, L.src); continue; }
+      if (L.t === 'char') { setChar(L.pos, L.src, L.who); continue; }
+      if (L.t === 'charoff') { clearChar(L.pos); continue; }
       if (L.t === 'sfx') { try { Sound.play(L.name); } catch (e) { /* ignore */ } continue; }
       if (L.t === 'shake') { scr.classList.remove('shake'); void scr.offsetWidth; scr.classList.add('shake'); continue; }
       if (L.t === 'fade') { busy = true; fadeEl.classList.add('on'); setTimeout(() => { fadeEl.classList.remove('on'); busy = false; next(); }, 650); return; }
@@ -148,7 +169,7 @@
   }
   function show(name, text, narr) {
     waitUntil = 0;
-    nameEl.textContent = name || ''; nameEl.className = 'vn-name ' + nameClass(name || '');
+    nameEl.textContent = name || ''; nameEl.className = 'vn-name ' + nameClass(name || ''); focusSpeaker(name || '');
     textEl.classList.toggle('narr', !!narr); full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
     if (text) { const p = document.createElement('p'); p.className = narr ? 'narr' : nameClass(name || ''); p.innerHTML = (name ? `<b>${esc(name)}</b>` : '') + esc(text); logList.appendChild(p); }
   }
