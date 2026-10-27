@@ -80,3 +80,10 @@ window.STORY_TEXT = String.raw`
    名前: { kind: 'bg'（背景）か 'char'（キャラ）, src: 画像のファイル, who: そのキャラの名前（話すとき明るく表示） } */
 window.STORY_IMAGES = {
 };
+
+/* 記憶の物語（記憶のかけらを3つ集めると読める）。シナリオ編集ページの「記憶の物語」から、反映するときに自動で書き込みます。
+   ボスの名前: 'boss' 捨てられた英雄 / 'snowman' 溶けない雪だるま / 'friend' 顔のない友人 / 'astro' 星を目指した者 / 'postman' 忘却を運ぶ郵便屋 /
+   'wheel' 壊れた観覧車 / 'batter' 最後の打者 / 'witch' 異端の魔女 / 'siren' 深海の歌姫 / 'throne' 空っぽの玉座 / 'dancer' 終幕の踊り子 /
+   'clock' 刻喰らいの時計塔 / 'whale' 深海の夢鯨 / 'devourer' 灯を喰らうもの（ゲームでは真相が明かされるまで表示しない） */
+window.MEMORY_STORIES = {
+};

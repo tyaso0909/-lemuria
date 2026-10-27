@@ -34,6 +34,10 @@
     devourer: { look: '灯台を思わせる塔の体、割れた光輪、頂の灯室。さまざまな夢の色がくすんで混ざり、ひびから光が漏れる。', origin: null, sealed: 'この記憶は、まだ読み解けない。' },
   };
   const ORDER = Object.keys(MEM);
+  // 記憶の物語: written in the scenario editor, reflected into story.js as window.MEMORY_STORIES = { kind: '文章' }
+  const STORIES = window.MEMORY_STORIES || {};
+  const storyOf = (k) => k === 'devourer' ? '' : String(STORIES[k] || '').trim(); // (灯を喰らうもの: not shown until the truth is revealed)
+  const parasHtml = (t) => t.split(/\n\s*\n|\n/).map((x) => x.trim()).filter(Boolean).map((x) => `<p>${esc(x)}</p>`).join('');
   const tierOfBoss = (k) => { const E = Y().ENEMIES[k]; return E.final ? '第100ウェーブ' : `第${E.tier}階層から`; };
 
   // ---- save
@@ -105,10 +109,10 @@
         <aside><canvas width="300" height="300"></canvas><h3>${esc(E.name)}</h3><div class="pips big">${pips(n)}</div><div class="mem-k">記憶のかけら ${Math.min(n, 3)} / 3${n > 3 ? `（集めた数 ${n}）` : ''}</div>
           <dl><dt>現れる場所</dt><dd>${tierOfBoss(k)}</dd><dt>初めて退けた</dt><dd>第${m.first || '?'}ウェーブ</dd><dt>退けた回数</dt><dd>${n}回</dd></dl></aside>
         <div class="mem-main">
-          ${sec(1, '残された言葉', `<p class="mem-sub">「${esc(E.sub)}」</p>`)}
+          ${sec(1, '残された言葉', `<p class="mem-sub">${/^「/.test(E.sub) ? esc(E.sub) : '「' + esc(E.sub) + '」'}</p>`)}
           ${sec(1, '姿', `<p>${esc(D.look)}</p>`)}
           ${sec(2, '夢の由来と、今の思い', origin)}
-          ${sec(3, '記憶の物語', `<p class="${D.story ? '' : 'u-none'}">${esc(D.story || NO_STORY)}</p>`)}
+          ${sec(3, '記憶の物語', storyOf(k) ? parasHtml(storyOf(k)) : `<p class="u-none">${esc(k === 'devourer' ? D.sealed : NO_STORY)}</p>`)}
         </div>
         <button class="btn ghost small mem-close" type="button">閉じる</button>
       </div>`;
