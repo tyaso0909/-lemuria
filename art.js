@@ -38,8 +38,8 @@
   function spriteFrame(kind, u) {
     const S = SPRITES[kind];
     if (!S || !S.ready) return null;
-    const f = S.frames[S.pick(u)];
-    return f ? { S, f } : null;
+    const name = S.pick(u), f = S.frames[name];
+    return f ? { S, f, name } : null;
   }
   function drawSprite(ctx, sp) {
     const { S, f } = sp, k = 1 / S.px;
@@ -7523,6 +7523,7 @@
       // hurt flash: draw once into a shared offscreen, tint white with source-atop (no ctx.filter)
       drawFlashed(ctx, kind, u, img, u.hurt, sp);
     } else if (sp) {
+      if (sp.S.under) sp.S.under(ctx, u, sp.name);   // e.g. a light behind the figure
       drawSprite(ctx, sp);
     } else if (img && img.ready) {
       ctx.drawImage(img.el, -img.w * img.ax, -img.h * img.ay, img.w, img.h);

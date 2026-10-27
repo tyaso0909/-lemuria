@@ -36,5 +36,52 @@
     },
   };
   Art.useSprite('swordsman', SWORD);
-  window.__pick = (u) => SWORD.pick(u);   // (test hook)
+
+  // 盾兵（2026-10-27 ユーザー提供のコマ絵 3枚：待機・歩き／攻撃／固有能力「かばう背中」）
+  //   idle1〜4: 待機（3でまばたき）、idle5〜8: 歩き
+  //   atk1: 構え、atk2〜5: 木づちを振りかぶって振る、atk6: 当たる、atk7〜8: 戻る
+  //   skill1〜4: 盾を地面に据えて踏ん張る、skill5〜8: 守っている間（窓の明かりが強い）
+  const GUARD_HALF_T = 2.5;              // かばう背中の長さ（game.js の INNATE.guardian.t と同じ）
+  const GUARD = {
+    src: 'sprites/guardian.webp',
+    px: 2.5,
+    frames: {"skill1":[0,0,118,153,53.9,151.8],"skill2":[120,0,122,129,43.8,127.7],"skill3":[244,0,119,127,49.1,124.9],"skill4":[365,0,127,135,44.2,132.7],"skill5":[494,0,128,128,45.8,127.0],"skill6":[624,0,129,128,45.2,126.7],"skill7":[755,0,128,129,45.6,126.7],"skill8":[885,0,129,128,44.7,126.7],"idle1":[1016,0,120,164,56.9,161.8],"idle2":[1138,0,121,165,56.6,162.8],"idle3":[1261,0,120,160,55.2,157.2],"idle4":[0,167,120,164,56.9,162.1],"idle5":[122,167,123,158,49.8,154.7],"idle6":[247,167,122,155,58.2,152.9],"idle7":[371,167,123,158,49.7,155.0],"idle8":[496,167,119,157,49.0,154.0],"atk1":[617,167,117,148,55.3,146.9],"atk2":[736,167,126,134,53.7,132.0],"atk3":[864,167,118,155,48.4,152.9],"atk4":[984,167,118,159,48.6,156.5],"atk5":[1104,167,129,151,45.2,147.9],"atk6":[1235,167,126,138,47.0,135.9],"atk7":[0,333,119,156,48.2,153.6],"atk8":[121,333,117,149,55.3,146.9]},
+    pick(u) {
+      const t = u.anim || 0, at = u.atk || 0;
+      // かばう背中: u.halfT が新しくなった瞬間から2.5秒
+      if (u.halfT !== u.sprHalfK) {
+        u.sprHalfK = u.halfT;
+        // (again while still braced: stay braced instead of crouching once more)
+        if (u.halfT) u.sprHalfS = u.sprHalfS != null && t - u.sprHalfS < GUARD_HALF_T ? t - 0.4 : t;
+      }
+      const e = u.sprHalfS != null ? t - u.sprHalfS : 99;
+      if (e < GUARD_HALF_T) {
+        u.sprFight = t;
+        if (e < 0.4) return 'skill' + (1 + Math.floor(e / 0.1));
+        return 'skill' + (5 + Math.floor((e - 0.4) * 6) % 4);
+      }
+      if (at > 0.01) { u.sprFight = t; return 'atk' + (at > 0.66 ? 6 : at > 0.33 ? 7 : 8); }
+      if (!u.walk && u.sprFight != null && t - u.sprFight < 1.8) {
+        const W = 0.45;
+        if (u.cool > 0 && u.cool <= W) return 'atk' + Math.min(5, 2 + Math.floor((1 - u.cool / W) * 4));
+        return 'atk1';
+      }
+      if (u.walk) return 'idle' + (5 + Math.floor(t * 6) % 4);   // 重い足取り
+      const ph = (t + (u.id || 0) * 1.37) % 4.5;
+      if (ph > 4.0) return 'idle' + [2, 3, 3, 4][Math.min(3, Math.floor((ph - 4.0) / 0.125))];
+      return 'idle1';
+    },
+    // 守っている間: 背中から暖かい光（窓の明かりの色）
+    under(ctx, u, name) {
+      if (!/^skill[2-8]$/.test(name)) return;
+      const e = (u.anim || 0) - (u.sprHalfS || 0), k = Math.min(1, e / 0.4) * Math.min(1, (GUARD_HALF_T - e) / 0.3);
+      if (!(k > 0)) return;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      Art.glow(ctx, 2, -30, 44 + Math.sin(e * 6) * 3, 'rgba(255,205,120,A)', 0.55 * k);
+      Art.glow(ctx, 10, -24, 18, 'rgba(255,235,170,A)', 0.5 * k);
+      ctx.restore();
+    },
+  };
+  Art.useSprite('guardian', GUARD);
+  window.__pick = (u, k) => (k === 'guardian' ? GUARD : SWORD).pick(u);   // (test hook)
 })();
