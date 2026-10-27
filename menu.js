@@ -308,7 +308,7 @@
     el.innerHTML = `
       <div class="u-card">
         <aside class="u-side">
-          <canvas></canvas>
+          <img class="u-art" src="unit-art/${k}.jpg" alt="${escH(d.name)}"><canvas hidden></canvas>
           <h3>${escH(d.name)}</h3>
           <div class="u-role">${escH(roleOf(k))}</div>
           <dl class="u-stats">${unitStats(k).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
@@ -322,7 +322,9 @@
         </div>
         <button class="btn ghost small u-close" type="button">閉じる</button>
       </div>`;
-    Art.drawCardArt(el.querySelector('canvas'), k, 200);
+    // provisional illustration (unit-art/); falls back to the drawn portrait when the file is missing
+    const art = el.querySelector('.u-art'), cv = el.querySelector('canvas');
+    art.onerror = () => { art.remove(); cv.hidden = false; Art.drawCardArt(cv, k, 200); };
     el.addEventListener('click', (ev) => { if (ev.target === el) closeUnitDetail(); });
     el.querySelector('.u-close').addEventListener('click', () => { Sound.play('click'); closeUnitDetail(); });
     $('teamScreen').appendChild(el);

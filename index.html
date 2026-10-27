@@ -395,6 +395,7 @@ html { background: #05081a; }
   background: linear-gradient(180deg, rgba(22,32,72,.97), rgba(10,14,36,.98)); border: 1px solid rgba(232,196,122,.45); border-radius: 22px; box-shadow: 0 0 60px rgba(143,214,255,.15); }
 .u-side { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 0; }
 .u-side canvas { width: 200px; height: 200px; border-radius: 16px; border: 1px solid rgba(143,214,255,.35); }
+.u-side img.u-art { width: 200px; height: 230px; object-fit: cover; object-position: center 22%; border-radius: 16px; border: 1px solid rgba(143,214,255,.35); background: #10162e; }
 .u-side h3 { margin: 6px 0 0; font-family: var(--f-display); font-size: 32px; font-weight: 800; letter-spacing: .1em; color: #fff3d6; }
 .u-role { font-size: 14px; color: var(--lamp); letter-spacing: .14em; }
 .u-stats { display: grid; grid-template-columns: auto auto; gap: 6px 22px; margin: 10px 0 0; font-size: 15px; width: 100%; }
@@ -411,7 +412,7 @@ html { background: #05081a; }
 
 /* Phones in landscape: the stage is scaled to ~0.5, so enlarge the text and touch targets inside it */
 @media (max-height: 520px) {
-  .u-card { width: 1180px; height: 660px; grid-template-columns: 330px 1fr; padding: 26px 30px; } .u-side canvas { width: 180px; height: 180px; }
+  .u-card { width: 1180px; height: 660px; grid-template-columns: 330px 1fr; padding: 26px 30px; } .u-side canvas { width: 180px; height: 180px; } .u-side img.u-art { width: 180px; height: 210px; }
   .u-side h3 { font-size: 38px; } .u-role { font-size: 18px; } .u-stats { font-size: 19px; gap: 4px 20px; }
   .u-main section h4 { font-size: 24px; } .u-main section p { font-size: 20px; line-height: 1.7; } .u-abil li { font-size: 18px; }
   .t-logo { top: 22px; } .t-logo .l1 { font-size: 112px; } .t-logo .l2 { font-size: 56px; } .t-logo .l3 { font-size: 90px; } .t-logo .eyebrow { font-size: 17px; } .t-logo .tagline { font-size: 22px; }
@@ -459,7 +460,7 @@ html { background: #05081a; }
   .reward .br { font-size: 16px; } .res { font-size: 20px; }
 }
 /* Phones held upright: the game is shown turned sideways (html.rot), with the same enlarged phone layout */
-html.rot .u-card { width: 1180px; height: 660px; grid-template-columns: 330px 1fr; padding: 26px 30px; } html.rot .u-side canvas { width: 180px; height: 180px; }
+html.rot .u-card { width: 1180px; height: 660px; grid-template-columns: 330px 1fr; padding: 26px 30px; } html.rot .u-side canvas { width: 180px; height: 180px; } html.rot .u-side img.u-art { width: 180px; height: 210px; }
 html.rot .u-side h3 { font-size: 38px; } html.rot .u-role { font-size: 18px; } html.rot .u-stats { font-size: 19px; gap: 4px 20px; }
 html.rot .u-main section h4 { font-size: 24px; } html.rot .u-main section p { font-size: 20px; line-height: 1.7; } html.rot .u-abil li { font-size: 18px; }
 html.rot .t-logo { top: 22px; } html.rot .t-logo .l1 { font-size: 112px; } html.rot .t-logo .l2 { font-size: 56px; } html.rot .t-logo .l3 { font-size: 90px; } html.rot .t-logo .eyebrow { font-size: 17px; } html.rot .t-logo .tagline { font-size: 22px; }
