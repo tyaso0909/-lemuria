@@ -183,5 +183,53 @@
     },
   };
   Art.useSprite('ninja', NINJA);
-  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA }[k] || SWORD).pick(u);   // (test hook)
+
+  // パラディン（2026-10-27 ユーザー提供のコマ絵 3枚：待機・歩き／攻撃／固有能力「病室の約束」）
+  //   idle1〜4: 待機、idle5〜8: 一歩ずつ確かめるような歩き
+  //   atk1: 盾を構える、atk2〜3: 盾の陰で剣を引く、atk4: 突く、atk5: 斬る、atk6〜8: 戻る
+  //   skill1〜3: 約束を思い出す、skill4: 光が広がる、skill5〜8: 守っている間（3秒）
+  //   後ろの光（病室の窓の光）は、元の絵から外してゲームで描いている
+  const PAL_T = 3;                        // 病室の約束の長さ（game.js の INNATE.paladin.t と同じ）
+  const PALADIN = {
+    src: 'sprites/paladin.webp',
+    px: 2.5,
+    frames: {"skill1":[0,0,101,173,47.1,171.2],"skill2":[103,0,101,165,50.0,162.7],"skill3":[206,0,100,172,47.1,169.9],"skill4":[308,0,106,172,48.2,169.9],"skill5":[416,0,109,169,50.0,167.6],"skill6":[527,0,106,170,50.9,168.1],"skill7":[635,0,105,208,47.8,205.9],"skill8":[742,0,106,169,48.2,167.6],"idle1":[850,0,134,167,60.1,166.8],"idle2":[986,0,132,168,66.5,166.4],"idle3":[1120,0,134,167,60.9,166.1],"idle4":[1256,0,133,167,66.5,166.4],"idle5":[0,210,136,163,68.5,162.2],"idle6":[138,210,132,164,59.1,161.5],"idle7":[272,210,133,162,67.2,161.5],"idle8":[407,210,134,164,64.8,160.4],"atk1":[543,210,126,169,62.1,168.2],"atk2":[671,210,132,155,70.2,153.5],"atk3":[805,210,146,157,65.8,155.9],"atk4":[953,210,147,158,59.6,156.6],"atk5":[1102,210,144,161,58.4,159.7],"atk6":[1248,210,128,158,65.9,156.3],"atk7":[0,381,125,169,61.5,168.2],"atk8":[127,381,125,169,60.5,167.9]},
+    pick(u) {
+      const mv = walking(u), t = u.anim || 0, at = u.atk || 0;
+      if (u.vowed && !u.sprVow) { u.sprVow = true; u.sprVowS = t; }
+      const e = u.sprVowS != null ? t - u.sprVowS : 99;
+      if (e < PAL_T) {
+        u.sprFight = t;
+        if (e < 0.45) return 'skill' + (1 + Math.floor(e / 0.15));
+        if (e < 0.65) return 'skill4';
+        return 'skill' + (5 + Math.floor((e - 0.65) * 5) % 4);
+      }
+      if (at > 0.01) { u.sprFight = t; return 'atk' + (at > 0.75 ? 4 : at > 0.5 ? 5 : at > 0.33 ? 6 : at > 0.15 ? 7 : 8); }
+      if (!mv && u.sprFight != null && t - u.sprFight < 1.8) {
+        const W = 0.4;
+        if (u.cool > 0 && u.cool <= W) return 'atk' + (u.cool > W / 2 ? 2 : 3);
+        return 'atk1';
+      }
+      if (mv) return 'idle' + (5 + Math.floor(t * 6) % 4);
+      return 'idle' + (1 + Math.floor((t + (u.id || 0) * 0.8) * 1.6) % 4);
+    },
+    // 約束の光: 背中から暖かい光が広がり、守っている間ゆっくり脈打つ
+    under(ctx, u, name) {
+      if (!/^skill/.test(name)) return;
+      const e = (u.anim || 0) - (u.sprVowS || 0);
+      const k = Math.min(1, Math.max(0, (e - 0.3) / 0.35)) * Math.min(1, (PAL_T - e) / 0.4);
+      if (!(k > 0)) return;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      Art.glow(ctx, -6, -34, 58 + Math.sin(e * 5) * 4, 'rgba(255,214,140,A)', 0.5 * k);
+      Art.glow(ctx, -10, -40, 26, 'rgba(255,240,200,A)', 0.45 * k);
+      if (e > 0.45 && e < 1.3) {   // 広がる光の輪（周りの味方を包む）
+        const q = (e - 0.45) / 0.85;
+        ctx.strokeStyle = `rgba(255,226,160,${(0.6 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 3;
+        ctx.save(); ctx.scale(1, 0.3); ctx.beginPath(); ctx.arc(0, -4, 20 + q * 100, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      }
+      ctx.restore();
+    },
+  };
+  Art.useSprite('paladin', PALADIN);
+  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN }[k] || SWORD).pick(u);   // (test hook)
 })();
