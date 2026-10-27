@@ -26,7 +26,7 @@
   }
 
   function showScreen(id) {
-    for (const s of ['titleScreen', 'gachaScreen', 'recordScreen', 'teamScreen', 'shopScreen']) $(s).hidden = s !== id;
+    for (const s of ['titleScreen', 'gachaScreen', 'recordScreen', 'teamScreen', 'shopScreen', 'replayScreen']) $(s).hidden = s !== id;
     if (id === 'titleScreen') refreshMenu();
     if (id === 'gachaScreen') { if (!A.owns(sel)) sel = A.save.owned[0]; renderGacha(true); }
     if (id === 'recordScreen') renderRecords();

@@ -368,7 +368,7 @@ html { background: #05081a; }
     radial-gradient(ellipse 62% 38% at 46% 14%, rgba(5,8,26,.55), rgba(5,8,26,0) 70%),
     linear-gradient(270deg, rgba(5,8,26,.78) 0%, rgba(5,8,26,.45) 30%, rgba(5,8,26,0) 52%),
     linear-gradient(0deg, rgba(5,8,26,.55) 0%, rgba(5,8,26,0) 28%); }
-.t-logo { position: absolute; left: 0; right: 0; top: 34px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.t-logo { pointer-events: none; position: absolute; left: 0; right: 0; top: 34px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .t-logo .eyebrow { font-size: 13px; letter-spacing: .62em; color: #f1d79a; text-shadow: 0 0 12px rgba(0,0,0,.9); }
 .t-logo .logo { margin: 0; font-family: "Kaisei Decol", var(--f-display); font-weight: 700; letter-spacing: .06em; padding-left: .06em; line-height: 1.05;
   display: flex; align-items: baseline; justify-content: center; gap: .08em;
@@ -545,6 +545,86 @@ html.rot .reward .br { font-size: 16px; }
 html.rot .res { font-size: 20px; }
 
 @media (prefers-reduced-motion: reduce) { .card, .banner, .bar > i { transition: none; } }
+
+
+/* ---------- Tap to start / story / tutorial / ふりかえり — 2026-10-27 ---------- */
+.tap-start { display: none; }
+#titleScreen.tap-mode .menu-wrap, #titleScreen.tap-mode .crystal-pill, #titleScreen.tap-mode .t-replay { display: none; }
+#titleScreen.tap-mode .tap-start { display: flex; position: absolute; inset: 0; align-items: flex-end; justify-content: center; padding-bottom: 92px; background: none; border: 0; cursor: pointer; color: #f6ead0; }
+.tap-start span { font-family: var(--f-display); font-size: 30px; font-weight: 800; letter-spacing: .5em; padding-left: .5em; text-shadow: 0 0 18px rgba(232,196,122,.7), 0 2px 10px rgba(5,8,26,1); animation: tapBlink 2.2s ease-in-out infinite; }
+.tap-start small { display: block; margin-top: 10px; font-size: 14px; letter-spacing: .3em; color: #c3cdec; text-align: center; animation: none; }
+@keyframes tapBlink { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.t-replay { position: absolute; left: 22px; top: 22px; height: 40px; padding: 0 18px; border-radius: 20px; background: rgba(5,8,26,.7); border: 1px solid rgba(232,196,122,.5); color: #f1d79a; font: 700 15px var(--f-display); letter-spacing: .14em; cursor: pointer; }
+.t-replay:hover { border-color: var(--lamp); }
+/* story player */
+.vn { justify-content: flex-end; align-items: stretch; background: #05081a; user-select: none; -webkit-user-select: none; }
+.vn canvas, .vn .vn-photo, .vn .vn-fade { position: absolute; inset: 0; width: 100%; height: 100%; }
+.vn .vn-photo { background: #05081a url("title.jpg") center / cover no-repeat; opacity: 0; transition: opacity .6s; }
+.vn .vn-photo.on { opacity: 1; }
+.vn .vn-fade { background: #000; opacity: 0; pointer-events: none; transition: opacity .45s; }
+.vn .vn-fade.on { opacity: 1; }
+.vn.shake { animation: vnShake .45s linear; }
+@keyframes vnShake { 0%,100% { transform: none; } 20% { transform: translate(-8px, 3px); } 40% { transform: translate(7px, -4px); } 60% { transform: translate(-5px, 2px); } 80% { transform: translate(4px, -1px); } }
+.vn-bar { position: absolute; top: 16px; left: 22px; right: 22px; display: flex; align-items: center; gap: 10px; z-index: 2; }
+.vn-chap { flex: 1; font: 700 16px var(--f-display); letter-spacing: .3em; color: #f1d79a; text-shadow: 0 1px 8px rgba(5,8,26,1); }
+.vn-b { height: 38px; padding: 0 16px; border-radius: 19px; background: rgba(5,8,26,.62); border: 1px solid rgba(147,163,207,.5); color: var(--ink); font: 700 14px var(--f-display); letter-spacing: .12em; cursor: pointer; }
+.vn-b.on { border-color: var(--lamp); color: #f1d79a; }
+.vn-box { position: relative; z-index: 1; margin: 0 40px 26px; min-height: 176px; padding: 34px 44px 26px; border-radius: 16px; background: linear-gradient(180deg, rgba(10,16,40,.82), rgba(5,8,26,.92)); border: 1px solid rgba(143,214,255,.28); box-shadow: 0 10px 40px rgba(0,0,0,.5); cursor: pointer; }
+.vn-name { position: absolute; left: 30px; top: -20px; min-width: 120px; padding: 6px 20px; border-radius: 10px; background: #0b1230; border: 1px solid rgba(143,214,255,.4); font: 800 20px var(--f-display); letter-spacing: .14em; color: var(--dream); text-align: center; }
+.vn-name:empty { display: none; }
+.vn-name.ordo { color: #f1d79a; border-color: rgba(232,196,122,.55); }
+.vn-name.who { color: #b9c2dc; border-color: rgba(185,194,220,.4); }
+.vn-text { font-family: var(--f-display); font-size: 25px; line-height: 1.85; letter-spacing: .06em; color: var(--ink); white-space: pre-wrap; }
+.vn-text.narr { color: #d6def6; }
+.vn-next { position: absolute; right: 26px; bottom: 16px; width: 12px; height: 12px; border-right: 2px solid var(--lamp); border-bottom: 2px solid var(--lamp); transform: rotate(45deg); opacity: 0; }
+.vn-box.done .vn-next { opacity: 1; animation: vnNext 1s ease-in-out infinite; }
+@keyframes vnNext { 0%,100% { translate: 0 0; } 50% { translate: 0 5px; } }
+.vn-log { position: absolute; inset: 0; z-index: 3; background: rgba(5,8,26,.92); display: flex; flex-direction: column; padding: 22px 60px; }
+.vn-log-head { display: flex; justify-content: space-between; align-items: center; font: 800 26px var(--f-display); letter-spacing: .2em; color: #f1d79a; margin-bottom: 12px; }
+.vn-log-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-right: 10px; }
+.vn-log-list p { margin: 0; font: 19px/1.7 var(--f-display); color: var(--ink); } .vn-log-list b { display: block; font-size: 15px; color: var(--dream); letter-spacing: .1em; }
+.vn-log-list p.ordo b { color: #f1d79a; } .vn-log-list p.narr { color: #c3cdec; }
+/* ふりかえり */
+.replay { min-width: 640px; max-height: 660px; }
+.rp-list { width: 100%; display: flex; flex-direction: column; gap: 10px; margin: 6px 0 14px; overflow-y: auto; max-height: 420px; }
+.rp-item { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 10px 20px; border-radius: 14px; background: rgba(20,28,60,.8); border: 1px solid rgba(143,214,255,.25); color: var(--ink); text-align: left; cursor: pointer; }
+.rp-item:hover:not(:disabled) { border-color: var(--dream); }
+.rp-item b { font: 800 21px var(--f-display); letter-spacing: .1em; } .rp-item span { margin-left: auto; font-size: 14px; color: var(--mist); }
+.rp-item i { width: 10px; height: 10px; border-radius: 50%; background: var(--lamp); box-shadow: 0 0 8px var(--lamp); flex: none; }
+.rp-item.tut i { background: var(--dream); box-shadow: 0 0 8px var(--dream); }
+.rp-item:disabled { opacity: .45; cursor: default; } .rp-item:disabled i { background: #55607e; box-shadow: none; }
+/* tutorial coach */
+.coach { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.coach.block { pointer-events: auto; cursor: pointer; }
+.coach-ring { position: absolute; border-radius: 14px; border: 3px solid var(--lamp); box-shadow: 0 0 0 9999px rgba(5,8,26,.55), 0 0 24px rgba(232,196,122,.8); transition: all .25s; pointer-events: none; }
+.coach-ring.pulse { animation: coachPulse 1.3s ease-in-out infinite; }
+@keyframes coachPulse { 0%,100% { border-color: var(--lamp); } 50% { border-color: #fff4d6; } }
+.coach-ring.none { left: 50% !important; top: 50% !important; width: 0 !important; height: 0 !important; border-width: 0; }
+.coach-ring.clear { box-shadow: 0 0 24px rgba(232,196,122,.8); }
+.coach-ring.clear.none { box-shadow: none; }
+.coach-bubble { position: absolute; left: 50%; top: 150px; transform: translateX(-50%); width: 760px; padding: 22px 30px 16px; border-radius: 16px; background: linear-gradient(180deg, rgba(14,22,52,.96), rgba(6,10,30,.97)); border: 1px solid rgba(232,196,122,.55); box-shadow: 0 10px 40px rgba(0,0,0,.55); pointer-events: none; }
+.coach-bubble.low { top: 330px; }
+.coach-bubble p { margin: 0; font: 22px/1.8 var(--f-display); letter-spacing: .05em; color: var(--ink); }
+.coach-bubble b { color: #f1d79a; }
+.coach-foot { margin-top: 8px; text-align: right; font-size: 14px; letter-spacing: .14em; color: var(--lamp); min-height: 18px; }
+.coach-foot.wait { color: var(--dream); }
+.coach-skip { position: absolute; left: 22px; bottom: 150px; height: 36px; padding: 0 16px; border-radius: 18px; background: rgba(5,8,26,.7); border: 1px solid rgba(147,163,207,.5); color: var(--mist); font: 700 13px var(--f-display); letter-spacing: .1em; cursor: pointer; pointer-events: auto; }
+@media (max-height: 520px) {
+  .tap-start span { font-size: 40px; } .tap-start small { font-size: 18px; }
+  .t-replay { height: 52px; font-size: 19px; padding: 0 22px; border-radius: 26px; }
+  .vn-b { height: 52px; font-size: 18px; padding: 0 20px; border-radius: 26px; } .vn-chap { font-size: 20px; }
+  .vn-box { min-height: 230px; padding: 40px 50px 30px; } .vn-text { font-size: 32px; } .vn-name { font-size: 26px; }
+  .vn-log-list p { font-size: 24px; } .vn-log-list b { font-size: 18px; }
+  .rp-item { min-height: 80px; } .rp-item b { font-size: 26px; } .rp-item span { font-size: 18px; }
+  .coach-bubble { width: 900px; } .coach-bubble p { font-size: 28px; } .coach-foot { font-size: 18px; } .coach-skip { height: 48px; font-size: 17px; bottom: 180px; }
+}
+html.rot .tap-start span { font-size: 40px; } html.rot .tap-start small { font-size: 18px; }
+html.rot .t-replay { height: 52px; font-size: 19px; padding: 0 22px; border-radius: 26px; }
+html.rot .vn-b { height: 52px; font-size: 18px; padding: 0 20px; border-radius: 26px; } html.rot .vn-chap { font-size: 20px; }
+html.rot .vn-box { min-height: 230px; padding: 40px 50px 30px; } html.rot .vn-text { font-size: 32px; } html.rot .vn-name { font-size: 26px; }
+html.rot .vn-log-list p { font-size: 24px; } html.rot .vn-log-list b { font-size: 18px; }
+html.rot .rp-item { min-height: 80px; } html.rot .rp-item b { font-size: 26px; } html.rot .rp-item span { font-size: 18px; }
+html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 28px; } html.rot .coach-foot { font-size: 18px; } html.rot .coach-skip { height: 48px; font-size: 17px; bottom: 180px; }
 </style>
 </head>
 <body>
@@ -576,8 +656,16 @@ html.rot .res { font-size: 20px; }
       <div class="banner" id="banner"><div class="big" id="bannerBig"></div><div class="sub" id="bannerSub"></div></div>
     </div>
 
-    <div class="screen title-art" id="titleScreen">
+    <div class="coach" id="coach" hidden>
+      <div class="coach-ring none" id="coachRing"></div>
+      <div class="coach-bubble" id="coachBubble"><p id="coachText"></p><div class="coach-foot" id="coachFoot"></div></div>
+      <button class="coach-skip" id="coachSkip" type="button">チュートリアルをとばす</button>
+    </div>
+
+    <div class="screen title-art tap-mode" id="titleScreen">
       <div class="crystal-pill" id="menuCrystals"></div>
+      <button class="t-replay" id="replayBtn" type="button">ふりかえり</button>
+      <button class="tap-start" id="tapStart" type="button" aria-label="タップしてはじめる"><span>TAP TO START<small>タップしてはじめる</small></span></button>
       <header class="t-logo">
         <div class="eyebrow">LEMURIA &amp; THE STARLESS SEA</div>
         <h1 class="logo" aria-label="レムリアと星なき海"><span class="l1">レムリア</span><span class="l2">と</span><span class="l3">星なき海</span></h1>
@@ -597,7 +685,7 @@ html.rot .res { font-size: 20px; }
           カードをタップして召喚<span class="pc">　<kbd>1</kbd>〜<kbd>5</kbd> 召喚　<kbd>Esc</kbd> 一時停止　<kbd>F</kbd> 速度</span>
         </div>
       </div>
-      <div class="ver">Ver.0.7 プロトタイプ</div>
+      <div class="ver">Ver.0.8 プロトタイプ</div>
     </div>
 
     <div class="screen" id="gachaScreen" hidden></div>
@@ -613,6 +701,15 @@ html.rot .res { font-size: 20px; }
           <button class="btn" id="recBack">戻る</button>
         </div>
         <button class="danger-link" id="resetBtn">セーブデータを消去</button>
+      </div>
+    </div>
+
+    <div class="screen dim" id="replayScreen" hidden>
+      <div class="panel replay">
+        <h2>ふりかえり</h2>
+        <div class="lead">これまでの物語と、最初の防衛戦をもう一度。</div>
+        <div class="rp-list" id="rpList"></div>
+        <div class="row"><button class="btn" id="rpBack">戻る</button></div>
       </div>
     </div>
 
@@ -650,6 +747,15 @@ html.rot .res { font-size: 20px; }
         </div>
       </div>
     </div>
+
+    <div class="screen vn" id="vnScreen" hidden>
+      <canvas id="vnCv" width="1280" height="720"></canvas>
+      <div class="vn-photo" id="vnPhoto"></div>
+      <div class="vn-fade" id="vnFade"></div>
+      <div class="vn-bar"><span class="vn-chap" id="vnChap"></span><button class="vn-b" id="vnLogBtn" type="button">ログ</button><button class="vn-b" id="vnAutoBtn" type="button">オート</button><button class="vn-b" id="vnSkipBtn" type="button">スキップ</button></div>
+      <div class="vn-box" id="vnBox"><div class="vn-name" id="vnName"></div><div class="vn-text" id="vnText"></div><i class="vn-next"></i></div>
+      <div class="vn-log" id="vnLog" hidden><div class="vn-log-head">ログ<button class="vn-b" id="vnLogClose" type="button">閉じる</button></div><div class="vn-log-list" id="vnLogList"></div></div>
+    </div>
   </div>
 </div>
 
@@ -664,6 +770,9 @@ html.rot .res { font-size: 20px; }
 <script src="abilities.js"></script>
 <script src="game.js"></script>
 <script src="menu.js"></script>
+<script src="story.js"></script>
+<script src="vn.js"></script>
+<script src="tutorial.js"></script>
 
 </body>
 </html>

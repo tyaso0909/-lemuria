@@ -834,7 +834,12 @@
     G.shake = Math.max(0, G.shake - dt);
 
     // waves
-    if (G.wave === 0) {
+    if (G.scripted) {
+      // チュートリアル: no wave progression; tutorial.js queues enemies with spawn(); the lighthouse cannot fall
+      G.waveTime += dt;
+      while (G.spawnQueue.length && G.spawnQueue[0].t <= G.waveTime) { const s = G.spawnQueue.shift(); G.enemies.push(makeEnemy(s.k, 1, false)); G.seen[s.k] = true; }
+      if (G.hp < G.hpMax * 0.35) G.hp = G.hpMax * 0.35;
+    } else if (G.wave === 0) {
       G.prep -= dt;
       if (G.prep <= 0) startWave(1);
     } else if (G.endTimer < 0) {
@@ -2574,12 +2579,19 @@
     const hp = Math.max(0, Math.ceil(G.hp));
     if (hudLast.hp !== hp) { ui.hpText.textContent = `${hp} / ${G.hpMax}`; ui.hpFill.style.width = (hp / G.hpMax * 100) + '%'; ui.hpBar.classList.toggle('low', hp / G.hpMax < 0.3); hudLast.hp = hp; }
     const wv = Math.max(1, G.wave);
+    if (G.scripted) {
+      const n = G.spawnQueue.length + G.enemies.filter((e) => !e.dead).length, lt = n > 0 ? `残りのナイトメア ${n}` : '';
+      if (hudLast.wave !== 'tut') { ui.waveText.innerHTML = 'チュートリアル'; hudLast.wave = 'tut'; }
+      if (hudLast.left !== lt) { ui.leftText.textContent = lt; hudLast.left = lt; }
+      ui.waveFill.style.width = ((G.tutStep || 0) * 100).toFixed(1) + '%';
+    } else {
     if (hudLast.wave !== wv) { ui.waveText.innerHTML = `WAVE ${wv} <small>/ ${CONFIG.totalWaves}</small>`; hudLast.wave = wv; }
     const left = G.wave === 0 ? 0 : G.spawnQueue.length + G.enemies.filter((e) => !e.dead).length;
     const leftTxt = `第${tierOf(wv)}階層・` + (G.wave === 0 ? '準備中' : left > 0 ? `残りのナイトメア ${left}` : (G.wave < CONFIG.totalWaves ? '次のウェーブまで小休止' : ''));
     if (hudLast.left !== leftTxt) { ui.leftText.textContent = leftTxt; hudLast.left = leftTxt; }
     const wp = G.wave === 0 ? 1 - G.prep / CONFIG.prepTime : isBossWave(G.wave) ? 1 : Math.min(1, G.waveTime / waveLen(G.wave));
     ui.waveFill.style.width = (wp * 100).toFixed(1) + '%';
+    }
     if (hudLast.kills !== G.kills) { ui.killText.textContent = G.kills; hudLast.kills = G.kills; }
     const army = armyN(); // 出撃中の住人（砲台・人形は数えない。夢鯨に呑まれている住人は数える）
     if (hudLast.army !== army) { const el = $('armyText'); el.innerHTML = `出撃 <b>${army}</b> / ${CONFIG.allyCap}`; el.classList.toggle('full', army >= CONFIG.allyCap); hudLast.army = army; }
@@ -2645,6 +2657,21 @@
     refreshCardAbilities(); refreshCardBless(); $('blessScreen').hidden = true;
     setSpeed(1);
   }
+  // チュートリアル（tutorial.js が使う）: a scripted battle with a fixed deck; ends back at the title
+  function startTutorialGame(deck) {
+    Sound.init(); Sound.startMusic();
+    if (deck && deck.length) { DECK.length = 0; DECK.push(...deck); }
+    if (builtDeck !== DECK.join()) buildCards();
+    newGame(); hudLast = {};
+    G.scripted = true; G.wave = 1; G.prep = 0; G.energy = CONFIG.energyMax; G.tutStep = 0;
+    ui.banner.classList.remove('show'); bannerTimer = 0;
+    show(ui.title, false); show(ui.result, false); show(ui.pause, false); show(ui.hud, true);
+    for (const id of ['gachaScreen', 'recordScreen', 'teamScreen', 'shopScreen']) show($(id), false);
+    refreshCardAbilities(); refreshCardBless(); $('blessScreen').hidden = true;
+    setSpeed(1);
+    return G;
+  }
+  function tutSpawn(kind, n, gap) { for (let i = 0; i < (n || 1); i++) G.spawnQueue.push({ k: kind, t: G.waveTime + 0.2 + i * (gap || 1) }); G.spawnQueue.sort((a, b) => a.t - b.t); }
   function setPaused(v) {
     if (!G || G.mode !== 'play') return;
     G.paused = v; show(ui.pause, v);
@@ -2656,6 +2683,7 @@
     for (const b of ui.speedSeg.querySelectorAll('button')) { const on = +b.dataset.s === v; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
   }
   function toTitle(screen) {
+    if (G && G.scripted && window.Tutorial) window.Tutorial.abort();
     G = null; show(ui.hud, false); show(ui.pause, false); show(ui.result, false); $('blessScreen').hidden = true;
     ui.banner.classList.remove('show'); Sound.stopMusic();
     window.Menu.show(typeof screen === 'string' ? screen : 'titleScreen');
@@ -2719,7 +2747,7 @@
     const dtReal = Math.min(0.05, (ts - (lastTs || ts)) / 1000);
     lastTs = ts; realT += dtReal;
     if (G && G.mode === 'play' && !G.paused && !G.picking) {
-      const steps = G.speed;
+      const steps = G.hold ? 0 : G.speed; // (G.hold: the tutorial is explaining — time stands still, the HUD still updates)
       for (let i = 0; i < steps && G.mode === 'play'; i++) update(dtReal);
       if (G) updateHUD();
     }
@@ -2731,6 +2759,7 @@
   // test / QA hook (used by automated playtests; harmless in normal play)
   window.__yume = {
     INNATE,
+    tutorial: { start: startTutorialGame, spawn: tutSpawn, banner: (a, b, d) => showBanner(a, b, d || 2.2), end: () => toTitle('titleScreen'), get renderK() { return renderK; } },
     get state() { return G; }, CONFIG, UNITS, ENEMIES, WAVES, DECK, BOSS, BOSSES, LANE, buildWave, waveBudget, tierOf, growth, rawBudget, forceBoss: null,
     start: startGame, startWave: (n) => startWave(n), summon, canSummon, toMenu: toTitle, BLESS, costOf, pick: (i) => pickBlessing(i), autoPick: null,
     step(dt) { if (!G || G.mode !== 'play') return; if (G.picking) pickBlessing(0); update(dt); },
