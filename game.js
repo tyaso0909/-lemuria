@@ -209,8 +209,8 @@
       waltz: { off: 70, r: 120 }, curtain: { time: 3, push: 150, r: 320 }, spin: { every: 8, first: 3, mul: 0.9 }, spot: { every: 7, first: 2, n: 3, r: 45, time: 2.0, mul: 1.6 } },
     whale:   { name: '深海の夢鯨', role: 'ボス', boss: true, ai: 'whale', tier: 9, hp: 3600, atk: 46, rate: 3.0, range: 120, speed: 16, dream: 120, radius: 80, flying: true, hover: 860, diveAfter: 30, sub: '空を飛ぶことを夢見た人たちの願いが、海の底で鯨になった', p2: ['夢鯨が深く潜った', '浮かび上がる場所に注意'],
       swallow: { every: 10, first: 6, wind: 1.0, time: 8, hit: 0.6, heal: 0.2, max: 3, reach: 420 }, spout: { every: 9, r: 300, v: 0.03 }, dive: { every: 10, first: 2, time: 2.5, r: 140, mul: 1.5, knock: 50, up: 6 } },
-    devourer: { name: '灯を喰らうもの', role: 'ボス', boss: true, ai: 'devourer', final: true, tier: 10, hp: 3200, atk: 50, rate: 2.6, range: 110, speed: 12, dream: 200, radius: 70, armor: 0.15, sub: '夜の底から、灯よりも大きな影がせり上がる', p2: ['光輪が砕けた', '光の帯に注意'],
-      regen: 0.85, drain: { every: 15, first: 8, wind: 2.5, take: 3, takeCapped: 1, shield: 0.015, starve: 5, weak: 0.2 }, hand: { chance: 0.25, cd: 6, stun: 3 }, forms: [0.8, 0.6, 0.4], formTime: 20, slam: { off: 80, r: 130 }, beam: { every: 8, len: 700, wind: 1.4, mul: 1.4 }, p2At: 0.2 },
+    devourer: { name: '灯を喰らうもの', role: 'ボス', boss: true, ai: 'devourer', final: true, tier: 10, hp: 3200, atk: 50, rate: 2.6, range: 220, speed: 12, dream: 200, radius: 180, armor: 0.15, sub: '夜の底から、灯よりも大きな影がせり上がる', p2: ['光輪が砕けた', '光の帯に注意'],
+      regen: 0.85, drain: { every: 15, first: 8, wind: 2.5, take: 3, takeCapped: 1, shield: 0.015, starve: 5, weak: 0.2 }, hand: { chance: 0.25, cd: 6, stun: 3 }, forms: [0.8, 0.6, 0.4], formTime: 20, slam: { off: 190, r: 130 }, beam: { every: 8, len: 700, wind: 1.4, mul: 1.4 }, p2At: 0.2 },
     // ボスが呼ぶ雑魚（通常のウェーブには出ない）
     letter:    { name: '漂う手紙', role: '飛行型', hp: 30, atk: 6, rate: 1.0, range: 30, speed: 60, dream: 1, radius: 10, flying: true, bossOnly: true },
     express:   { name: '速達', role: '飛行型', hp: 100, atk: 10, rate: 1.0, range: 20, speed: 55, dream: 3, radius: 14, flying: true, courier: true, bossOnly: true }, // (flies low: melee in the line can hit it as it passes)
@@ -2155,13 +2155,13 @@
     if (!timer(e, 'f1', dt, 1.5)) return false;
     const say = (v) => G.texts.push({ x: e.x, y: e.y - 260, v, life: 1.2, skill: true });
     switch (k) {
-      case 'boss': e.T.f1 = 6; startWind(e, 'slam', 0.75); addHazard({ x: e.x - 60, r: 140, dur: 0.75, dmg: e.atkV, knock: 28, from: e }); return true;
+      case 'boss': e.T.f1 = 6; startWind(e, 'slam', 0.75); addHazard({ x: e.x - 170, r: 140, dur: 0.75, dmg: e.atkV, knock: 28, from: e }); return true;
       case 'snowman': { e.T.f1 = 5; const t = backAlly(e, A, 700); if (t) addHazard({ x: t.x, r: 60, dur: 1.2, dmg: e.atkV * 0.8, slow: 1.5, from: e, visual: 'snow', sx: e.x - 40, sy: e.y - 260 }); return false; }
       case 'friend': { e.T.f1 = 9; const t = backAlly(e, A, 2000); if (t) { addHazard({ x: t.x, r: 50, dur: 0.7, dmg: e.atkV * 1.4, from: e, tower: false }); say('みつけた'); } return false; }
       case 'astro': { e.T.f1 = 6; const pool = A.filter((a) => !a.summoned).sort(() => Math.random() - 0.5).slice(0, 2); for (const t of pool) addHazard({ x: t.x + rand(-18, 18), r: 70, dur: 1.3, dmg: e.atkV * F.rock.mul, from: e, visual: 'rock' }); return false; }
       case 'wheel': { e.T.f1 = 5; const n = (e.T.rn = (e.T.rn || 0) + 1) % 3; if (n === 1) bossSummon(e, 'charger', 1, -60); else if (n === 2) bossSummon(e, 'swarm', 3, -60); else bossSummon(e, 'runner', 2, -60); return false; }
       case 'batter': e.T.f1 = 7; e.stanceOn = true; e.stanceT = F.stance.time; say('構え'); return false;
-      case 'siren': e.T.f1 = 9; G.hazards.push({ x: e.x, r: F.song.r, t: 0, dur: 1.0, y: MID_Y + 6, dmg: 0, from: e, tower: false, visualOnly: true, then: () => { for (const a of alive(G.allies)) if (Math.abs(a.x - e.x) <= F.song.r) a.dazeT = Math.max(a.dazeT || 0, F.song.daze); say('眠りの歌'); Sound.play('bell'); } }); return false;
+      case 'siren': e.T.f1 = 9; G.hazards.push({ x: e.x, r: F.song.r + 110, t: 0, dur: 1.0, y: MID_Y + 6, dmg: 0, from: e, tower: false, visualOnly: true, then: () => { for (const a of alive(G.allies)) if (Math.abs(a.x - e.x) <= F.song.r + 110) a.dazeT = Math.max(a.dazeT || 0, F.song.daze); say('眠りの歌'); Sound.play('bell'); } }); return false;
       case 'throne': e.T.f1 = 7; G.quakes.push({ x: e.x - 40, y: MID_Y + 6, speed: F.quake.speed, dmg: e.atkV * F.quake.mul, from: e, hit: new Set() }); G.shake = 0.35; Sound.play('slam'); return false;
       case 'clock': e.T.f1 = 99; e.rwHp = e.hp; e.rwPending = true; startWind(e, 'drain', F.rewind.wind); say('チクタク…'); return true;
       case 'postman': { e.T.f1 = 10; for (const s of bossSummon(e, 'express', 1, -40)) s.atkV = e.baseAtk * ENEMIES.postman.express.hit; say('速達'); return false; }
