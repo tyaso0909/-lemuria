@@ -31,9 +31,11 @@
     clock:    { look: '振り子時計を核にした時計塔。中には丸まった子ども。文字盤は数字だけ。', origin: '「大人になりたくない」と枕に顔をうずめ、時計の針を止めた子どもの夢。その願いは忘れられたが、子どもは今も時計の中に隠れている。' },
     whale:    { look: '半透明の深い藍色。ひれの先だけ色あせた空色。体の中に夜空を思わせる丸い光が漂う。', origin: '空を飛ぶことを夢見た、多くの人の願い。誰も空を見上げなくなり、海の底へ沈んで鯨になった。' },
     // 灯を喰らうものの由来は灯台の真の機能に触れるので、ゲーム内ではまだ明かさない（【確定】序盤では明かさない）
-    devourer: { look: '灯台を思わせる塔の体、割れた光輪、頂の灯室。さまざまな夢の色がくすんで混ざり、ひびから光が漏れる。', origin: null, sealed: 'この記憶は、まだ読み解けない。' },
+    devourer: { look: '海と波がうねり、津波のようにせり上がる姿。灯台を喰らおうとする大きな口と、赤い瞳のような光。割れた光輪を戴き、さまざまな夢の色がくすんで混ざり、ひびから光が漏れる。', origin: null, sealed: 'この記憶は、まだ読み解けない。' },
   };
   const ORDER = Object.keys(MEM);
+  // ボスの絵（ユーザーが用意した仮の画像、2026-10-27）: shown once the boss has been defeated; before that, the battle sprite's silhouette
+  const ART = (k) => `boss-art/${k}.jpg`;
   // 記憶の物語: written in the scenario editor, reflected into story.js as window.MEMORY_STORIES = { kind: '文章' }
   const STORIES = window.MEMORY_STORIES || {};
   const storyOf = (k) => k === 'devourer' ? '' : String(STORIES[k] || '').trim(); // (灯を喰らうもの: not shown until the truth is revealed)
@@ -92,8 +94,9 @@
     for (const k of ORDER) {
       const m = M[k], E = Y().ENEMIES[k], has = !!(m && m.n > 0);
       const b = document.createElement('button'); b.type = 'button'; b.className = 'mem-card' + (has ? '' : ' locked') + (has && Math.min(3, m.n) > (m.seen || 0) ? ' new' : '');
-      b.innerHTML = `<canvas width="180" height="180"></canvas><b>${has ? esc(E.name) : '？？？'}</b><span class="pips">${pips(has ? m.n : 0)}</span>`;
-      paint(b.querySelector('canvas'), k, !has);
+      b.innerHTML = `${has ? `<img class="mem-art" alt="" src="${ART(k)}" loading="lazy">` : '<canvas width="180" height="180"></canvas>'}<b>${has ? esc(E.name) : '？？？'}</b><span class="pips">${pips(has ? m.n : 0)}</span>`;
+      if (!has) paint(b.querySelector('canvas'), k, true);
+      else b.querySelector('img').onerror = function () { const c = document.createElement('canvas'); c.width = c.height = 180; this.replaceWith(c); paint(c, k, false); };
       if (has) b.addEventListener('click', () => { try { Sound.play('click'); } catch (e) { /* ignore */ } openDetail(k); });
       else b.disabled = true;
       list.appendChild(b);
@@ -106,7 +109,7 @@
     const el = $('memDetail');
     el.innerHTML = `
       <div class="mem-sheet">
-        <aside><canvas width="300" height="300"></canvas><h3>${esc(E.name)}</h3><div class="pips big">${pips(n)}</div><div class="mem-k">記憶のかけら ${Math.min(n, 3)} / 3${n > 3 ? `（集めた数 ${n}）` : ''}</div>
+        <aside><img class="mem-art big" alt="${esc(E.name)}の姿" src="${ART(k)}"><h3>${esc(E.name)}</h3><div class="pips big">${pips(n)}</div><div class="mem-k">記憶のかけら ${Math.min(n, 3)} / 3${n > 3 ? `（集めた数 ${n}）` : ''}</div>
           <dl><dt>現れる場所</dt><dd>${tierOfBoss(k)}</dd><dt>初めて退けた</dt><dd>第${m.first || '?'}ウェーブ</dd><dt>退けた回数</dt><dd>${n}回</dd></dl></aside>
         <div class="mem-main">
           ${sec(1, '残された言葉', `<p class="mem-sub">${/^「/.test(E.sub) ? esc(E.sub) : '「' + esc(E.sub) + '」'}</p>`)}
@@ -116,7 +119,7 @@
         </div>
         <button class="btn ghost small mem-close" type="button">閉じる</button>
       </div>`;
-    paint(el.querySelector('canvas'), k, false);
+    el.querySelector('img.mem-art').onerror = function () { const c = document.createElement('canvas'); c.width = c.height = 300; c.className = 'mem-art big'; this.replaceWith(c); paint(c, k, false); };
     el.hidden = false;
     el.querySelector('.mem-close').addEventListener('click', closeDetail);
     el.onclick = (e) => { if (e.target === el) closeDetail(); };

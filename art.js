@@ -5625,8 +5625,9 @@
     // ---------------- 最終ボス「灯を喰らうもの」 ----------------
     devourer(ctx, u) {
       // 灯を喰らうもの — born from the dream-light a lighthouse gathered for years, fused with the distortion of
-      // the sea of forgetting. A warped, dark echo of the tower: bands of many faded dream colours, a hungry
-      // lantern for a head, a broken halo, long shadow arms. It wants to devour the light itself.
+      // the sea of forgetting. A colossal living tsunami rearing out of the sea, its crest curling over a huge
+      // maw of foam fangs aimed at the lighthouse (forward = +x). Faded dream colours run dully through the
+      // water, stolen light leaks from cracks, red eyes burn under the crest, and a broken halo rings its head.
       const t = u.anim || 0, at = u.atk || 0, P2 = (u.phase || 1) >= 2;
       const wind = clamp01(u.wind || 0), w = ease(wind), wk = u.windKind;
       const slW = wind > 0 && wk === 'slam' ? w : 0;
@@ -5637,346 +5638,375 @@
       const sh = clamp01(u.shield || 0), sv = clamp01(u.starve || 0);
       const walk = !!u.walk;
       const hsh = (n) => { const s = Math.sin(n * 127.1 + 31.7) * 43758.5453; return s - Math.floor(s); };
-      const DINK = '#0c0616', DARK = '#140b20';
+      const OUT = '#04101a';
       ctx.lineJoin = 'round';
-      const bz3 = (p0, p1, p2, p3, s) => { const r = 1 - s; return [r * r * r * p0[0] + 3 * r * r * s * p1[0] + 3 * r * s * s * p2[0] + s * s * s * p3[0], r * r * r * p0[1] + 3 * r * r * s * p1[1] + 3 * r * s * s * p2[1] + s * s * s * p3[1]]; };
-      const curve = (p0, p1, p2, p3, n) => { const o = []; for (let i = 0; i <= n; i++) o.push(bz3(p0, p1, p2, p3, i / n)); return o; };
-      function ribbon(P, wf) {
-        const L = [], R = [], n = P.length;
-        for (let i = 0; i < n; i++) {
-          const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)];
-          let tx = b[0] - a[0], ty = b[1] - a[1]; const d = Math.hypot(tx, ty) || 1; tx /= d; ty /= d;
-          const ww = wf(i / (n - 1));
-          L.push([P[i][0] - ty * ww, P[i][1] + tx * ww]); R.push([P[i][0] + ty * ww, P[i][1] - tx * ww]);
-        }
-        ctx.beginPath(); ctx.moveTo(L[0][0], L[0][1]);
-        for (let i = 1; i < n; i++) ctx.lineTo(L[i][0], L[i][1]);
-        for (let i = n - 1; i >= 0; i--) ctx.lineTo(R[i][0], R[i][1]);
-        ctx.closePath();
-      }
-      const ik = (ax, ay, bx, by, l1, l2, px, py) => {
-        let dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy) || 1;
-        const mx = l1 + l2 - 0.5;
-        if (d > mx) { bx = ax + dx / d * mx; by = ay + dy / d * mx; dx = bx - ax; dy = by - ay; d = mx; }
-        const a = (l1 * l1 - l2 * l2 + d * d) / (2 * d), h = Math.sqrt(Math.max(0, l1 * l1 - a * a));
-        let nx = -dy / d, ny = dx / d; if (nx * px + ny * py < 0) { nx = -nx; ny = -ny; }
-        return [ax + dx / d * a + nx * h, ay + dy / d * a + ny * h, bx, by];
-      };
-      const drip = (x, y, l, r) => { rr(ctx, x - r * 0.62, y, r * 1.24, l, r * 0.62); ctx.fill(); circ(ctx, x, y + l, r); ctx.fill(); };
       const add = (fn) => { ctx.globalCompositeOperation = 'lighter'; fn(); ctx.globalCompositeOperation = 'source-over'; };
+      const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      // smooth path through points (quadratic through midpoints); open paths keep their end points
+      const smooth = (P, closed) => {
+        const n = P.length; ctx.beginPath();
+        if (closed) {
+          const m0 = mid(P[n - 1], P[0]); ctx.moveTo(m0[0], m0[1]);
+          for (let i = 0; i < n; i++) { const p = P[i], m = mid(p, P[(i + 1) % n]); ctx.quadraticCurveTo(p[0], p[1], m[0], m[1]); }
+          ctx.closePath();
+        } else {
+          ctx.moveTo(P[0][0], P[0][1]);
+          for (let i = 1; i < n - 1; i++) { const m = mid(P[i], P[i + 1]); ctx.quadraticCurveTo(P[i][0], P[i][1], m[0], m[1]); }
+          ctx.lineTo(P[n - 1][0], P[n - 1][1]);
+        }
+      };
+      // point + unit tangent at fraction s (by length) along a polyline
+      const along = (P, s) => {
+        let L = 0; const d = [];
+        for (let i = 0; i < P.length - 1; i++) { const v = Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]) || 1e-3; d.push(v); L += v; }
+        let r = clamp01(s) * L;
+        for (let i = 0; i < d.length; i++) {
+          if (r <= d[i] || i === d.length - 1) { const k = Math.min(1, r / d[i]), a = P[i], b = P[i + 1]; return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, (b[0] - a[0]) / d[i], (b[1] - a[1]) / d[i]]; }
+          r -= d[i];
+        }
+        return [P[0][0], P[0][1], 1, 0];
+      };
 
       // ---- pose ----
-      const lean = (P2 ? 0.13 + Math.sin(t * 0.8) * 0.015 : 0) + (walk ? Math.sin(t * 2.2) * 0.012 : Math.sin(t * 0.9) * 0.006);
-      // slam timing: k = how far the claw has travelled down, back = recovery to rest (no tilt after)
-      let slK = 0, slBack = 0;
+      let slK = 0, slBack = 0;                                 // slam: crest crashes forward, then recovers
       if (slR > 0) { slK = ease(clamp01((1 - slR) * 3.4)); slBack = ease(clamp01((0.42 - slR) / 0.42)); }
       const slHit = slK * (1 - slBack);
-      const hunch = slW * 0.4 + slHit;                         // shoulders dip into the slam, then recover
+      const bA = bmR > 0 ? (bmR > 0.15 ? 1 : bmR / 0.15) : bmW * 0.35;
+      const bmA = Math.max(bmW, bmR > 0 ? 1 : 0);
+      const lean = (P2 ? 0.13 + Math.sin(t * 0.8) * 0.015 : 0) + (walk ? Math.sin(t * 2.2) * 0.012 : Math.sin(t * 0.9) * 0.006)
+        - slW * 0.1 + slHit * 0.16;                            // rears back on the wind-up, crashes forward on the hit
       const lamp = clamp01(0.42 + drA * 0.5 + Math.max(bmW, bmR) * 0.6 + (P2 ? 0.12 : 0)) * (1 - sv * 0.82);
       const flick = 0.85 + 0.15 * Math.sin(t * 7.3) * Math.sin(t * 3.1);
-      const LX = 0, LY = -308;                                  // lantern centre (leaned frame)
-
-      // ---- ground: the sea it rose from ----
-      ctx.fillStyle = 'rgba(8,4,20,.9)'; ell(ctx, 4, -1, 168, 13); ctx.fill();
-      for (let i = 0; i < 7; i++) { const px = -150 + i * 50 + Math.sin(i * 2.1) * 8, pr = 5 + (Math.sin(t * 1.1 + i) + 1) * 3; ell(ctx, px, -1, pr * 1.8, pr * 0.42); ctx.fill(); }
-      ctx.strokeStyle = 'rgba(150,120,230,.28)'; ctx.lineWidth = 1.3;
-      for (let i = 0; i < 2; i++) { const p = (t * 0.3 + i / 2) % 1; ell(ctx, 4, -1, 120 + p * 60, 9 + p * 5); ctx.stroke(); }
-      add(() => sglow(ctx, 0, -200, 230, P2 ? '190,70,170' : '130,70,210', 0.22 + drA * 0.12 + (P2 ? 0.1 : 0) - sv * 0.08));
-
-      // ---- roots / ink tendrils ----
-      const roots = [[-46, -168, 0.9, 1], [-30, -112, 1.4, 0], [-8, -60, 2.2, 1], [14, 70, 2.9, 0], [34, 128, 3.7, 1], [52, 166, 4.4, 0], [-56, -146, 5.1, 0], [44, 102, 5.9, 1]];
-      const root = (r, near) => {
-        const [bx, tx, seed, curl] = r;
-        const cw = walk ? Math.sin(t * 2.6 + seed) * 10 : Math.sin(t * 0.9 + seed) * 4;
-        const tip = [tx + cw, -3 - (curl ? 4 : 0)];
-        const P = curve([bx, -40], [bx + (tx - bx) * 0.15, -8], [bx + (tx - bx) * 0.6, 2 + Math.sin(t + seed) * 2], tip, 12);
-        const pe = P[P.length - 1], s = tx > 0 ? 1 : -1;
-        for (let i = 1; i <= 4; i++) { const a = (s > 0 ? 0 : Math.PI) - s * i * (curl ? 0.75 : 0.35); P.push([pe[0] + Math.cos(a) * i * 2.4 * s * s, pe[1] + Math.sin(a) * i * 2.4]); }
-        ribbon(P, (k) => (1 - k) * (near ? 12 : 10) + 1);
-        ctx.fillStyle = near ? '#1a0f28' : '#0e0818'; ctx.fill();
-        ctx.strokeStyle = DINK; ctx.lineWidth = 2; ctx.stroke();
-        if (near) { ctx.strokeStyle = RIM; ctx.lineWidth = 0.9; ctx.beginPath(); for (let i = 1; i < 9; i++) { const p = P[i]; if (i === 1) ctx.moveTo(p[0], p[1] - (1 - i / 16) * 11); else ctx.lineTo(p[0], p[1] - (1 - i / 16) * 11); } ctx.stroke(); }
-      };
-      for (let i = 0; i < roots.length; i++) if (!roots[i][3]) root(roots[i], false);
-
-      // ===== leaned frame (tower, head, halo, arms) =====
-      ctx.save();
-      ctx.translate(0, -36); ctx.rotate(lean); ctx.scale(1 + sv * 0.05, 1 - sv * 0.1); ctx.translate(0, 36);
-      // head frame (lantern sinks and droops forward when starving)
+      const LX = 0, LY = -308;                                  // light-core (beam source) centre, leaned frame
+      const jawA = 0.05 + Math.sin(t * 1.1) * 0.025 + drA * 0.24 + slW * 0.14 + bA * 0.05 + sv * 0.07 - slHit * 0.05;
+      const foamA = 1 - sv * 0.55;
+      const sx = 1 + sv * 0.05, sy = 1 - sv * 0.1;
+      const leanT = () => { ctx.translate(0, -36); ctx.rotate(lean); ctx.scale(sx, sy); ctx.translate(0, 36); };
+      const leanP = (x, y) => { const X = x * sx, Y = (y + 36) * sy, c = Math.cos(lean), s = Math.sin(lean); return [X * c - Y * s, X * s + Y * c - 36]; };
+      // head frame (the crest sinks and droops forward when starving)
       const headT = () => { ctx.translate(LX, -270); ctx.rotate(sv * 0.1); ctx.translate(-LX, 270 + sv * 7); };
+      const dc = Math.cos(sv * 0.1), ds = Math.sin(sv * 0.1);
+      const D = (x, y) => {                                     // headT applied to the upper body, fading out downward
+        if (sv <= 0) return [x, y];
+        const k = clamp01((-y - 140) / 160), py = y + 270 + sv * 7;
+        return [lerp(x, x * dc - py * ds, k), lerp(y, x * ds + py * dc - 270, k)];
+      };
 
-      // ---- broken halo behind the lantern ----
-      const HC = [-4, -326], HR = [100, 92];
-      const halA = 1 - sv * 0.65;
-      ctx.save(); headT();
-      if (!P2) {
-        const frags = [[-2.62, -1.86, 0], [-1.52, -0.62, 1], [-0.28, 0.5, 2]];
-        for (const [a0, a1, i] of frags) {
-          const ox = Math.sin(t * 1.1 + i * 2) * 3, oy = Math.cos(t * 0.9 + i * 1.3) * 2.4 + sv * 10 + i * sv * 4;
-          const arcP = (s) => { ctx.beginPath(); ctx.ellipse(HC[0] + ox, HC[1] + oy, HR[0] * s, HR[1] * s, -0.12, a0, a1); };
-          const am = (a0 + a1) / 2;
-          add(() => sglow(ctx, HC[0] + ox + Math.cos(am) * HR[0], HC[1] + oy + Math.sin(am) * HR[1], 46, '255,226,190', 0.22 * halA));
-          ctx.lineCap = 'butt';
-          arcP(1); ctx.strokeStyle = DINK; ctx.lineWidth = 11; ctx.stroke();
-          ctx.strokeStyle = `rgba(196,182,150,${(0.85 * halA).toFixed(3)})`; ctx.lineWidth = 6.4; ctx.stroke();
-          arcP(1.012); ctx.strokeStyle = `rgba(255,244,214,${(0.6 * halA).toFixed(3)})`; ctx.lineWidth = 1.4; ctx.stroke();
-          arcP(0.985); ctx.strokeStyle = 'rgba(40,24,40,.5)'; ctx.lineWidth = 1.6; ctx.stroke();
-        }
+      // ---- the sea it rises from ----
+      ctx.fillStyle = 'rgba(4,12,24,.9)'; ell(ctx, 14, -1, 200, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(140,220,220,.26)'; ctx.lineWidth = 1.3;
+      for (let i = 0; i < 2; i++) { const p = (t * 0.3 + i / 2) % 1; ell(ctx, 10, -1, 170 + p * 70, 11 + p * 6); ctx.stroke(); }
+      add(() => sglow(ctx, 10, -210, 250, P2 ? '190,80,130' : '60,140,160', 0.2 + drA * 0.1 + (P2 ? 0.1 : 0) - sv * 0.08));
+      // a lower swell rolling in behind it
+      {
+        const s1 = Math.sin(t * 1.2) * 4;
+        const swell = () => { ctx.beginPath(); ctx.moveTo(-252, 0); ctx.bezierCurveTo(-250, -40 + s1, -238, -88, -208, -108 + s1); ctx.bezierCurveTo(-190, -118, -170, -112, -152, -100); ctx.lineTo(-120, 0); ctx.closePath(); };
+        swell(); ctx.fillStyle = lgc(ctx, 'dvw-swell', 0, -160, 0, 0, [[0, '#2a6470'], [0.5, '#173a52'], [1, '#0c1630']]); ctx.fill();
+        ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; ctx.stroke();
+        ctx.strokeStyle = `rgba(214,246,246,${(0.7 * foamA).toFixed(3)})`; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-246, -48 + s1); ctx.bezierCurveTo(-240, -84, -228, -100, -206, -106 + s1); ctx.stroke();
+        ctx.strokeStyle = 'rgba(150,220,220,.18)'; ctx.lineWidth = 1.4; ctx.beginPath();
+        for (let i = 0; i < 3; i++) { ctx.moveTo(-236 + i * 14, -14); ctx.quadraticCurveTo(-232 + i * 12, -60 + i * 8, -206 + i * 10, -92 + i * 12); } ctx.stroke();
+        ctx.lineCap = 'butt';
       }
-      ctx.restore();
 
-      // ---- arm geometry ----
-      const shN = [34 + hunch * 14, -234 + hunch * 26 + sv * 12], shF = [-18 + hunch * 8, -244 + hunch * 18 + sv * 12];
-      const sway = Math.sin(t * 1.3) * 5, swayF = Math.sin(t * 1.3 + 1.2) * 4;
-      const restN = [154 + sway + (walk ? Math.sin(t * 2.2) * 10 : 0) - sv * 40, -126 + Math.cos(t * 1.3) * 4 + sv * 70];
-      let hN = restN.slice();
-      let hF = [118 + swayF - sv * 36, -164 + sv * 66 + Math.cos(t * 1.3 + 1) * 3];
-      hN = [lerp(hN[0], 58, slW), lerp(hN[1], -404, slW)];
-      if (slR > 0) { const up = [58, -404], dn = [184, -24]; const k = slK; hN = [lerp(lerp(up[0], dn[0], k), restN[0], slBack), lerp(lerp(up[1], dn[1], k), restN[1], slBack)]; }
-      if (drA > 0) { hN = [lerp(hN[0], 96, drA * 0.6), lerp(hN[1], -262, drA * 0.6)]; hF = [lerp(hF[0], 70, drA * 0.6), lerp(hF[1], -286, drA * 0.6)]; }
-      const L1 = 82, L2 = 96;
-      function arm(sp, hp, near, slamming) {
-        const k = ik(sp[0], sp[1], hp[0], hp[1], L1, L2, 0.3, 1);
-        const el = [k[0], k[1]], wr = [k[2], k[3]];
-        const col = near ? '#1b1029' : '#100919';
-        // two gently bowed segments (sinewy, not stick-straight)
-        const seg = (a, b, bow) => { const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1; const c = [mx - dy / d * bow, my + dx / d * bow]; const o = []; for (let i = 0; i <= 8; i++) { const q = i / 8; o.push([(1 - q) * (1 - q) * a[0] + 2 * (1 - q) * q * c[0] + q * q * b[0], (1 - q) * (1 - q) * a[1] + 2 * (1 - q) * q * c[1] + q * q * b[1]]); } return o; };
-        const P = seg(sp, el, -9).concat(seg(el, wr, -7).slice(1));
-        // tattered shadow strands hanging off the forearm
-        ctx.strokeStyle = near ? 'rgba(18,10,30,.85)' : 'rgba(12,6,22,.8)'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-        ctx.beginPath();
-        for (let i = 0; i < 4; i++) {
-          const p = P[5 + i * 3], l = 16 + (i % 2) * 10 + Math.sin(t * 2 + i) * 3, sw2 = Math.sin(t * 1.7 + i * 1.4) * 4;
-          ctx.moveTo(p[0], p[1] + 6); ctx.quadraticCurveTo(p[0] - 4 + sw2, p[1] + l * 0.6, p[0] - 2 + sw2 * 1.4, p[1] + l + 6);
-        }
-        ctx.stroke(); ctx.lineCap = 'butt';
-        const aw = (s) => (s < 0.5 ? lerp(near ? 19 : 16, 11, s / 0.5) : lerp(11, 7.5, (s - 0.5) / 0.5)) + Math.sin(s * Math.PI * 2) * 1.6;
-        ribbon(P, aw);
-        ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2.6; ctx.stroke();
-        if (near) { ctx.strokeStyle = RIM; ctx.lineWidth = 1.1; ctx.beginPath(); for (let i = 1; i < P.length - 1; i++) { const p = P[i], wv = aw(i / 16) - 1.5; if (i === 1) ctx.moveTo(p[0], p[1] - wv); else ctx.lineTo(p[0], p[1] - wv); } ctx.stroke(); }
-        // bony elbow spur (rounded) + a sinew highlight
-        ell(ctx, el[0] - 2, el[1] + 3, near ? 9 : 7.5, near ? 7 : 6, 0.6); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2; ctx.stroke();
-        if (near) { ctx.strokeStyle = 'rgba(200,170,240,.18)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(P[10][0], P[10][1]); for (let i = 11; i < 15; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.stroke(); }
-        // hand + four long claws, curling downward-forward
-        const fa = Math.atan2(wr[1] - el[1], wr[0] - el[0]);
-        ctx.save(); ctx.translate(wr[0], wr[1]); ctx.rotate(fa);
-        ell(ctx, 6, 0, 13, 10); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2.4; ctx.stroke();
-        const spread = slamming ? 0.5 : 0.3 + Math.sin(t * 1.6) * 0.05 + drA * 0.2;
-        for (let i = 0; i < 4; i++) {
-          const a = (i - 1.5) * spread, len = 44 - Math.abs(i - 1.5) * 6 + (near ? 4 : 0);
-          const c = Math.cos(a), s = Math.sin(a);
-          const crl = 0.5 + (slamming ? -0.2 : 0);
-          const C = curve([10 * c, 10 * s], [10 * c + len * 0.45 * c, 10 * s + len * 0.45 * s], [10 * c + len * 0.85 * Math.cos(a + crl * 0.6), 10 * s + len * 0.85 * Math.sin(a + crl * 0.6)], [10 * c + len * Math.cos(a + crl), 10 * s + len * Math.sin(a + crl)], 8);
-          ribbon(C, (q) => (1 - q) * 5.4 + 0.5);
-          ctx.fillStyle = near ? '#24162e' : '#150c1e'; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 1.8; ctx.stroke();
-          if (near) { const q = C[6], q2 = C[8]; ctx.strokeStyle = 'rgba(220,200,240,.55)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.lineTo(q2[0], q2[1]); ctx.stroke(); }
+      // ===== leaned frame: the wave body =====
+      // (the body is drawn narrowed about x = 30 so its footprint matches the old one; the beam source stays put)
+      const XS = 0.86, xsT = () => { ctx.translate(30, 0); ctx.scale(XS, 1); ctx.translate(-30, 0); };
+      ctx.save(); leanT(); xsT();
+
+      // ---- body outline points (forward = +x): [x, y, jaw weight, wobble] ----
+      const RAW = [
+        [-206, 0, 0, 0], [-192, -50, 0, 2], [-172, -122, 0, 3], [-142, -200, 0, 4], [-104, -268, 0, 4], [-56, -324, 0, 5],
+        [2, -366, 0, 5], [66, -396, 0, 5], [130, -406, 0, 5], [186, -392, 0, 4], [226, -356, 0, 3], [242, -310, 0, 3],
+        [230, -262, 0, 2], [206, -250, 0, 1], [172, -242, 0, 1], [132, -228, 0, 1], [94, -210, 0, 1], [64, -194, 0, 1], [44, -184, 0, 0],
+        [62, -168, 1, 1], [104, -150, 1, 1], [150, -132, 1, 1], [188, -116, 1, 1], [204, -110, 1, 1], [200, -90, 1, 2], [182, -70, 0.6, 2],
+        [188, -40, 0.25, 2], [212, -12, 0, 2], [234, 0, 0, 0]];
+      const CJ = [44, -184], jc = Math.cos(jawA), js = Math.sin(jawA);
+      const pts = RAW.map(([x, y, jw, a], i) => {
+        const wa = Math.sin(t * 1.4 + i * 1.7) * a + (walk ? Math.sin(t * 2.6 + i) * a * 0.8 : 0);
+        x += wa * 0.6; y += Math.sin(t * 1.1 + i * 2.3) * a * 0.5;
+        y -= slW * 18 * clamp01((-y - 250) / 150);             // the crest climbs during the slam wind-up
+        if (jw) { const rx = x - CJ[0], ry = y - CJ[1], c = lerp(1, jc, jw), s = js * jw; x = CJ[0] + rx * c - ry * s; y = CJ[1] + rx * s + ry * c; }
+        return D(x, y);
+      });
+      const UP = pts.slice(12, 19);                             // upper jaw underside: lip tip → mouth corner
+      const LO = pts.slice(18, 24);                             // lower jaw top: corner → lower lip tip
+      const MC = [(pts[12][0] + pts[23][0] + pts[18][0] * 2) / 4, (pts[12][1] + pts[23][1] + pts[18][1] * 2) / 4];
+
+      // ---- broken halo: arcs of a ring behind the crest (gaps, never a full ring, never rays) ----
+      const HC = [36, -352], HRX = 134, HRY = 76, HROT = -0.12;
+      const halA = 1 - sv * 0.65;
+      const HFR = [[2.5, 3.1, 0], [-2.95, -2.15, 1], [-1.85, -1.2, 2], [-0.95, -0.35, 3]];
+      const halo = () => {
+        if (P2) return;
+        ctx.save(); headT();
+        for (const [a0, a1, i] of HFR) {
+          const ox = Math.sin(t * 1.1 + i * 2) * 3, oy = Math.cos(t * 0.9 + i * 1.3) * 2.4 + sv * 10 + i * sv * 3;
+          const arcP = (s) => { ctx.beginPath(); ctx.ellipse(HC[0] + ox, HC[1] + oy, HRX * s, HRY * s, HROT, a0, a1); };
+          const am = (a0 + a1) / 2;
+          add(() => sglow(ctx, HC[0] + ox + Math.cos(am) * HRX, HC[1] + oy + Math.sin(am) * HRY, 44, '255,226,190', 0.24 * halA));
+          ctx.lineCap = 'butt';
+          arcP(1); ctx.strokeStyle = OUT; ctx.lineWidth = 10.5; ctx.stroke();
+          ctx.strokeStyle = `rgba(200,186,150,${(0.88 * halA).toFixed(3)})`; ctx.lineWidth = 6; ctx.stroke();
+          arcP(1.01); ctx.strokeStyle = `rgba(255,244,214,${(0.65 * halA).toFixed(3)})`; ctx.lineWidth = 1.4; ctx.stroke();
+          arcP(0.99); ctx.strokeStyle = 'rgba(40,24,40,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
         }
         ctx.restore();
-        return wr;
-      }
-      // tattered ink mantle over the tower's shoulders (the arms grow out from under it)
-      const mantle = () => {
-        const y0 = -264, hb = hunch * 10 + sv * 8;
-        ctx.beginPath(); ctx.moveTo(-50, y0);
-        ctx.quadraticCurveTo(-70, y0 + 6, -72, y0 + 30 + hb);
-        eHem(ctx, -72, 70, y0 + 44 + hb, 12, t, 9, 2);
-        ctx.quadraticCurveTo(74, y0 + 10 + hb, 50, y0); ctx.closePath();
-        ctx.fillStyle = lgc(ctx, 'dev-mantle', -72, 0, 72, 0, [[0, '#0c0716'], [0.6, '#1e1230'], [1, '#140b20']]); ctx.fill();
-        ctx.strokeStyle = DINK; ctx.lineWidth = 2.6; ctx.stroke();
-        ctx.strokeStyle = RIM; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-50, y0 + 1); ctx.quadraticCurveTo(-69, y0 + 7, -71, y0 + 28 + hb); ctx.stroke();
-        // folds + a few round night-lights caught in the cloth
-        ctx.strokeStyle = 'rgba(8,4,16,.6)'; ctx.lineWidth = 1.6; ctx.beginPath();
-        for (const fx of [-40, -14, 14, 42]) { ctx.moveTo(fx, y0 + 4); ctx.quadraticCurveTo(fx - 3, y0 + 22, fx + 1, y0 + 38 + hb); } ctx.stroke();
-        ctx.fillStyle = 'rgba(225,215,255,.45)'; for (let i = 0; i < 6; i++) { circ(ctx, -50 + hsh(i + 61) * 104, y0 + 8 + hsh(i + 62) * 24 + hb * 0.5, 1.2); ctx.fill(); }
-        ctx.fillStyle = '#0a0414'; for (let i = 0; i < 3; i++) drip(-46 + i * 40, y0 + 40 + hb, 4 + (Math.sin(t * 1.5 + i * 2) + 1) * 4, 2);
       };
-      // far arm (behind the tower)
-      arm(shF, hF, false, false);
 
-      // ---- tower body: stacked, warped bands of faded dream colours ----
-      const TB = -34, TT = -262;
-      const hw = (y) => { const k = (y - TB) / (TT - TB); return lerp(64, 40, k) + Math.sin(k * 7 + 1) * 2.2; };
-      const cxo = (y) => { const k = (y - TB) / (TT - TB); return -Math.sin(k * Math.PI) * 6 + Math.sin(k * 11 + 2) * 1.2; };
-      const towerPath = () => {
-        ctx.beginPath();
-        for (let i = 0; i <= 20; i++) { const y = lerp(TB, TT, i / 20), x = cxo(y) - hw(y); if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
-        for (let i = 20; i >= 0; i--) { const y = lerp(TB, TT, i / 20); ctx.lineTo(cxo(y) + hw(y), y); }
-        ctx.closePath();
-      };
-      towerPath(); ctx.fillStyle = DARK; ctx.fill();
-      ctx.save(); towerPath(); ctx.clip();
-      const bands = [[-34, -64, '#2a2038', 0], [-64, -100, '#3e6462', 1], [-100, -112, '#160d22', 0], [-112, -152, '#8a4844', 2],
-        [-152, -188, '#a39880', 3], [-188, -199, '#160d22', 0], [-199, -234, '#8e6276', 4], [-234, -262, '#4c5a84', 5]];
-      const edge = (y, i) => (x) => y + Math.sin(x * 0.08 + i * 1.7) * 2.6 + Math.sin(x * 0.21 + i) * 1;
-      for (let b = 0; b < bands.length; b++) {
-        const [y0, y1, col, pat] = bands[b], e0 = edge(y0, b), e1 = edge(y1, b + 1);
-        ctx.beginPath(); ctx.moveTo(-80, b ? e0(-80) : 10);
-        for (let x = -80; x <= 80; x += 8) ctx.lineTo(x, b ? e0(x) : 10);
-        for (let x = 80; x >= -80; x -= 8) ctx.lineTo(x, b === bands.length - 1 ? TT - 10 : e1(x));
-        ctx.closePath(); ctx.fillStyle = col; ctx.fill();
-        // seam between bands (ink line)
-        if (b) { ctx.strokeStyle = 'rgba(10,4,16,.75)'; ctx.lineWidth = 2.2; ctx.beginPath(); for (let x = -80; x <= 80; x += 8) { if (x === -80) ctx.moveTo(x, e0(x)); else ctx.lineTo(x, e0(x)); } ctx.stroke(); }
-        const cy = (y0 + y1) / 2;
-        if (pat === 1) {          // sea teal: little wave arcs
-          ctx.strokeStyle = 'rgba(160,220,210,.3)'; ctx.lineWidth = 1.4; ctx.beginPath();
-          for (let r = 0; r < 2; r++) for (let x = -60 + r * 9; x < 60; x += 18) { ctx.moveTo(x, cy - 6 + r * 12); ctx.quadraticCurveTo(x + 4.5, cy - 11 + r * 12, x + 9, cy - 6 + r * 12); }
-          ctx.stroke();
-        } else if (pat === 2) {   // crayon red: loose scribbles
-          ctx.strokeStyle = 'rgba(220,140,120,.28)'; ctx.lineWidth = 2; ctx.beginPath();
-          ctx.moveTo(-50, cy - 10); for (let i = 0; i < 14; i++) ctx.lineTo(-50 + i * 7.5, cy + (i % 2 ? 9 : -10) + Math.sin(i * 2.3) * 2);
-          ctx.stroke();
-        } else if (pat === 3) {   // baseball cream: two curved stitch seams (dashed)
-          ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(170,60,60,.65)'; ctx.lineWidth = 1.8; ctx.beginPath();
-          ctx.moveTo(-40, y0 - 2); ctx.quadraticCurveTo(-18, cy, -40, y1 + 2); ctx.moveTo(-34, y0 - 2); ctx.quadraticCurveTo(-12, cy, -34, y1 + 2);
-          ctx.moveTo(36, y0 - 2); ctx.quadraticCurveTo(14, cy, 36, y1 + 2); ctx.moveTo(30, y0 - 2); ctx.quadraticCurveTo(8, cy, 30, y1 + 2);
-          ctx.stroke(); ctx.restore();
-        } else if (pat === 4) {   // toy pink: polka dots
-          ctx.fillStyle = 'rgba(240,190,210,.35)'; ctx.beginPath();
-          for (let r = 0; r < 2; r++) for (let x = -54 + r * 10; x < 56; x += 20) { const y = cy - 7 + r * 14; ctx.moveTo(x + 3.2, y); ctx.arc(x, y, 3.2, 0, TAU); }
-          ctx.fill();
-        } else if (pat === 5) {   // faded night blue: tiny round night-lights
-          ctx.fillStyle = 'rgba(220,226,255,.4)'; ctx.beginPath();
-          for (let i = 0; i < 9; i++) { const x = -38 + hsh(i + 3) * 76, y = y0 - 4 - hsh(i + 13) * (y0 - y1 - 8); ctx.moveTo(x + 1.3, y); ctx.arc(x, y, 1.3, 0, TAU); }
-          ctx.fill();
-        }
+      halo();   // behind the body: its broken arcs show around the crest
+
+      // ---- the maw: dark purple-red throat between the jaws ----
+      smooth(pts.slice(12, 24), false); ctx.closePath();
+      ctx.fillStyle = lgc(ctx, 'dvw-maw', 30, 0, 200, 0, [[0, '#14040f'], [0.35, '#431030'], [0.72, '#33102a'], [1, 'rgba(22,6,22,.78)']]); ctx.fill();
+      add(() => {
+        sglow(ctx, MC[0] - 14, MC[1], 92, P2 ? '200,70,90' : '160,34,86', 0.34 + drA * 0.3 + (P2 ? 0.2 : 0) - sv * 0.2);
+        if (P2) sglow(ctx, MC[0] - 30, MC[1] + 4, 46, '255,190,150', 0.3 * flick);   // swallowed light glowing in the throat
+      });
+      // wet strands stretched across the throat
+      ctx.strokeStyle = 'rgba(120,60,110,.45)'; ctx.lineWidth = 1.4; ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = along(UP, 0.25 + i * 0.17), b = along(LO, 0.86 - i * 0.18), sw2 = Math.sin(t * 1.6 + i) * 6;
+        ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo((a[0] + b[0]) / 2 + sw2, (a[1] + b[1]) / 2 + 12, b[0], b[1]);
       }
-      // ink haze over everything (faded colours) + cylinder shading
-      ctx.fillStyle = 'rgba(16,8,30,.3)'; ctx.fillRect(-90, TT - 10, 180, 240);
-      ctx.fillStyle = lgc(ctx, 'dev-shade', -66, 0, 66, 0, [[0, 'rgba(6,2,14,.82)'], [0.3, 'rgba(6,2,14,.3)'], [0.62, 'rgba(6,2,14,0)'], [0.82, 'rgba(6,2,14,.12)'], [1, 'rgba(6,2,14,.6)']]);
-      ctx.fillRect(-90, TT - 10, 180, 240);
-      ctx.fillStyle = lgc(ctx, 'dev-shadeV', 0, TB, 0, TB - 70, [[0, 'rgba(6,2,14,.75)'], [1, 'rgba(6,2,14,0)']]); ctx.fillRect(-90, TB - 70, 180, 72);
-      // hollow arched windows (dark, a faint stolen glow) and a doorway pouring ink
-      const winA = (x, y, wd, h) => {
-        ctx.beginPath(); ctx.moveTo(x - wd / 2, y + h); ctx.lineTo(x - wd / 2, y + wd / 2); ctx.arc(x, y + wd / 2, wd / 2, Math.PI, 0); ctx.lineTo(x + wd / 2, y + h); ctx.closePath();
-        ctx.fillStyle = '#05020a'; ctx.fill(); ctx.strokeStyle = 'rgba(120,90,140,.5)'; ctx.lineWidth = 1.4; ctx.stroke();
-        add(() => sglow(ctx, x, y + h * 0.6, wd * 1.6, '200,160,255', 0.25 * (0.4 + lamp)));
-      };
-      winA(8, -138, 11, 18); winA(4, -224, 10, 15);
-      winA(6, -96, 26, 62);
-      ctx.fillStyle = '#05020a';
-      for (let i = 0; i < 3; i++) drip(-2 + i * 8, -40, 4 + (Math.sin(t * 1.3 + i * 2) + 1) * 4, 2.6);
-      // cracks leaking pale light
-      const cracks = [[-26, -46, -18, -70, -24, -92, -12, -118, -16, -140], [24, -160, 14, -184, 20, -206, 8, -232, 12, -256], [-36, -190, -28, -206, -34, -222, -26, -240]];
-      if (P2) cracks.push([40, -60, 30, -84, 36, -104, 26, -124], [-6, -150, 2, -170, -4, -192], [-44, -110, -36, -128, -42, -148]);
-      const cg = P2 ? 1 : 0.55 + lamp * 0.3;
-      for (const c of cracks) {
-        add(() => { for (let i = 0; i < c.length; i += 4) sglow(ctx, c[i], c[i + 1], P2 ? 22 : 15, P2 ? '255,214,190' : '235,220,255', 0.35 * cg); });
+      ctx.stroke();
+
+      // ---- body ----
+      const body = () => smooth(pts, true);
+      body(); ctx.fillStyle = lgc(ctx, 'dvw-body', 0, -424, 0, 0, [[0, '#3f8c8c'], [0.2, '#245f6a'], [0.45, '#173e54'], [0.75, '#152646'], [1, '#100d28']]); ctx.fill();
+      ctx.save(); body(); ctx.clip();
+      ctx.fillStyle = lgc(ctx, 'dvw-back', -190, 0, -30, 0, [[0, 'rgba(6,10,28,.72)'], [1, 'rgba(6,10,28,0)']]); ctx.fillRect(-200, -440, 180, 450);
+      ctx.fillStyle = lgc(ctx, 'dvw-front', 60, 0, 210, 0, [[0, 'rgba(80,170,170,0)'], [1, 'rgba(96,186,184,.3)']]); ctx.fillRect(40, -210, 190, 212);
+      ctx.lineCap = 'round';
+      // faded dream colours, dully mixed into the water, swept up and over the crest
+      const DC = ['176,112,130', '182,148,96', '148,126,182', '98,164,158', '168,104,146'];
+      for (let i = 0; i < 5; i++) {
+        const x0 = -156 + i * 30, s2 = Math.sin(t * 0.7 + i * 1.3) * 6;
+        ctx.beginPath(); ctx.moveTo(x0, 6);
+        ctx.bezierCurveTo(x0 - 20 + s2, -150, x0 - 6 - s2 + i * 4, -280 - i * 6, x0 + 130 + i * 12, -360 + i * 18);
+        ctx.strokeStyle = `rgba(${DC[i]},.16)`; ctx.lineWidth = 30 - i * 2; ctx.stroke();
+      }
+      for (let i = 0; i < 3; i++) {   // and forward through the lower jaw
+        const y0 = -40 - i * 24, s2 = Math.sin(t * 0.8 + i * 2) * 5;
+        ctx.beginPath(); ctx.moveTo(-60, y0 + 20); ctx.bezierCurveTo(10, y0 - 4 + s2, 90, y0 - 30 - s2, 200, y0 - 56 + i * 6);
+        ctx.strokeStyle = `rgba(${DC[(i * 2 + 1) % 5]},.15)`; ctx.lineWidth = 18; ctx.stroke();
+        ctx.strokeStyle = `rgba(${DC[(i * 2 + 1) % 5]},.2)`; ctx.lineWidth = 5; ctx.stroke();
+      }
+      // soft blotches of faded dream colour drifting inside the water
+      for (let i = 0; i < 9; i++) {
+        const k = (t * 0.03 + hsh(i + 90)) % 1, bx = lerp(-150, 120, hsh(i + 91)) + k * 40, by = lerp(-40, -340, hsh(i + 92)) - k * 40;
+        sglow(ctx, bx, by, 46 + hsh(i + 93) * 40, DC[i % 5], 0.28 * Math.sin(k * Math.PI) + 0.08);
+      }
+      // layered sheets of water streaming up the back slope toward the crest (painterly bands + foam seams)
+      {
+        const BK = pts.slice(0, 11), nrm = BK.map((p, i) => { const a = BK[Math.max(0, i - 1)], b = BK[Math.min(BK.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1; return [dy / d, -dx / d]; });
+        ctx.setLineDash([26, 18]); ctx.lineDashOffset = -t * 30 * (walk ? 1.4 : 1);
+        for (let k = 0; k < 6; k++) {
+          const dd = 16 + k * 24 + Math.sin(t * 0.9 + k) * 3;
+          const L = BK.map((p, i) => [p[0] - nrm[i][0] * dd * (0.4 + 0.6 * Math.min(1, i / 3)), p[1] - nrm[i][1] * dd * (0.4 + 0.6 * Math.min(1, i / 3))]);
+          ctx.setLineDash([]); ctx.strokeStyle = k % 2 ? 'rgba(80,160,164,.14)' : 'rgba(10,24,44,.22)'; ctx.lineWidth = 16; smooth(L, false); ctx.stroke();
+          ctx.setLineDash([26 + k * 4, 18]); ctx.strokeStyle = `rgba(200,244,242,${(0.26 - k * 0.025).toFixed(3)})`; ctx.lineWidth = 1.6;
+          smooth(L.map((p, i) => [p[0] + nrm[i][0] * 8, p[1] + nrm[i][1] * 8]), false); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+      // backlit translucent water just under the crest, and sea lines where it rises out of the ocean
+      ctx.strokeStyle = 'rgba(120,214,210,.16)'; ctx.lineWidth = 14;
+      ctx.beginPath(); ctx.moveTo(-90, -280); ctx.bezierCurveTo(-30, -350, 100, -400, 220, -320); ctx.stroke();
+      ctx.lineWidth = 1.6; ctx.strokeStyle = 'rgba(170,232,232,.22)'; ctx.beginPath();
+      for (let i = 0; i < 4; i++) { const y = -14 - i * 15, o = Math.sin(t * 1.2 + i) * 10; ctx.moveTo(-200, y); for (let x = -200; x <= 240; x += 40) ctx.quadraticCurveTo(x + 20, y - 5 + (i % 2) * 3, x + 40 + o * 0.1, y); }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(150,226,224,.2)'; ctx.lineWidth = 34; smooth(pts.slice(4, 13), false); ctx.stroke();
+      ctx.strokeStyle = 'rgba(190,240,238,.16)'; ctx.lineWidth = 14; smooth(pts.slice(5, 13), false); ctx.stroke();
+      ctx.strokeStyle = `rgba(220,248,246,${(0.3 * foamA).toFixed(3)})`; ctx.lineWidth = 1.3; ctx.beginPath();
+      for (let i = 0; i < 12; i++) { const a = along(pts.slice(4, 13), 0.04 + i * 0.08), r = 5 + hsh(i + 70) * 6, o = 14 + hsh(i + 71) * 12; ctx.moveTo(a[0] - a[3] * o + r, a[1] + a[2] * o); ctx.arc(a[0] - a[3] * o, a[1] + a[2] * o, r, 0, Math.PI * (1 + hsh(i + 72))); }
+      ctx.stroke();
+      // ink haze dulls everything (+ grey hollowness when starving)
+      ctx.fillStyle = 'rgba(12,26,44,.22)'; ctx.fillRect(-200, -440, 430, 450);
+      if (sv > 0) { ctx.fillStyle = `rgba(30,26,40,${(0.4 * sv).toFixed(3)})`; ctx.fillRect(-200, -440, 430, 450); }
+      // swirl of water around the great eye
+      {
+        const e = D(106, -326);
+        ctx.strokeStyle = 'rgba(4,14,26,.5)'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.arc(e[0], e[1], 30, 2.4, 5.6); ctx.stroke();
+        ctx.strokeStyle = 'rgba(160,232,232,.3)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(e[0], e[1], 24, 3.0, 6.0); ctx.stroke();
+        ctx.beginPath(); ctx.arc(e[0] + 2, e[1] + 2, 40, 3.4, 5.4); ctx.stroke();
+      }
+      // cracks leaking pale stolen light
+      const cracks = [[-120, -60, -104, -92, -112, -124, -96, -160, -102, -190], [-66, -226, -52, -252, -60, -278, -44, -304], [-30, -110, -14, -138, -22, -162, -6, -180]];
+      if (P2) cracks.push([-140, -190, -126, -222, -132, -252], [110, -60, 122, -84, 114, -102], [-70, -320, -56, -342, -64, -360], [-90, -20, -74, -44, -84, -70]);
+      const cg = (P2 ? 1 : 0.55 + lamp * 0.3) * (1 - sv * 0.6);
+      for (const c0 of cracks) {
+        const c = []; for (let i = 0; i < c0.length; i += 2) { const p = D(c0[i], c0[i + 1]); c.push(p[0], p[1]); }
+        add(() => { for (let i = 0; i < c.length; i += 4) sglow(ctx, c[i], c[i + 1], P2 ? 26 : 16, P2 ? '255,214,190' : '235,226,255', 0.38 * cg); });
         const path = () => { ctx.beginPath(); ctx.moveTo(c[0], c[1]); for (let i = 2; i < c.length; i += 2) ctx.lineTo(c[i], c[i + 1]); };
-        path(); ctx.strokeStyle = DINK; ctx.lineWidth = P2 ? 5 : 4; ctx.stroke();
+        path(); ctx.strokeStyle = OUT; ctx.lineWidth = P2 ? 5 : 4; ctx.stroke();
         path(); ctx.strokeStyle = `rgba(255,240,225,${(0.85 * cg).toFixed(3)})`; ctx.lineWidth = P2 ? 2.2 : 1.4; ctx.stroke();
       }
-      ctx.restore();
-      towerPath(); ctx.strokeStyle = DINK; ctx.lineWidth = 3.2; ctx.stroke();
-      ctx.strokeStyle = RIM; ctx.lineWidth = 1.3; ctx.beginPath();
-      for (let i = 1; i <= 19; i++) { const y = lerp(TB, TT, i / 20), x = cxo(y) - hw(y) + 1; if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.stroke();
-      // ink running down the outside of the tower
-      ctx.fillStyle = '#0a0414';
-      for (let i = 0; i < 4; i++) { const y = [-112, -188, -199, -64][i], x = [-34, 22, -20, 44][i]; drip(x, y, 6 + (Math.sin(t * 1.2 + i * 1.9) + 1) * 6, 2.4); }
-      // near roots overlap the base
-      for (let i = 0; i < roots.length; i++) if (roots[i][3]) root(roots[i], true);
-
-      // ===== head: gallery, lantern room, dome =====
-      ctx.save(); headT();
-      // gallery ledge + bent, broken railing (parallel bars only)
-      ctx.beginPath(); rr(ctx, -58, -272, 116, 10, 4); ctx.fillStyle = '#1e1430'; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2.6; ctx.stroke();
-      ctx.strokeStyle = 'rgba(190,170,210,.3)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-54, -270); ctx.lineTo(54, -270); ctx.stroke();
-      ctx.lineCap = 'round';
-      for (let i = 0; i < 11; i++) {
-        const x = -50 + i * 10, br = hsh(i + 4) < 0.25, lnx = (hsh(i + 9) - 0.5) * 6, h = br ? 8 + hsh(i) * 6 : 20 + hsh(i + 1) * 3;
-        ctx.strokeStyle = DINK; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(x, -272); ctx.lineTo(x + lnx * h / 22, -272 - h); ctx.stroke();
-        ctx.strokeStyle = '#5a4a62'; ctx.lineWidth = 1.4; ctx.stroke();
-      }
-      ctx.strokeStyle = DINK; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-52, -293); ctx.quadraticCurveTo(-30, -290, -12, -294); ctx.moveTo(8, -290); ctx.quadraticCurveTo(30, -296, 52, -292); ctx.stroke();
-      ctx.strokeStyle = '#6a5870'; ctx.lineWidth = 1.8; ctx.stroke();
       ctx.lineCap = 'butt';
-      // lantern room frame
-      const GX0 = -27, GX1 = 27, GY0 = -330, GY1 = -286;
-      ctx.beginPath(); rr(ctx, -33, -336, 66, 58, 3); ctx.fillStyle = '#150c22'; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2.8; ctx.stroke();
-      // glass: dim, hungry glow
-      ctx.save(); ctx.beginPath(); ctx.rect(GX0, GY0, GX1 - GX0, GY1 - GY0); ctx.clip();
-      ctx.fillStyle = '#231636'; ctx.fillRect(GX0, GY0, GX1 - GX0, GY1 - GY0);
-      add(() => {
-        sglow(ctx, LX + 4, LY, 44, '230,200,255', 0.55 * lamp * flick);
-        sglow(ctx, LX + 4, LY + 4, 26, '255,214,170', 0.5 * lamp * flick);
-      });
-      // the lens turning forward for the beam: a bright disc on the front pane
-      const bmA = Math.max(bmW, bmR > 0 ? 1 : 0);
-      if (bmA > 0.02) add(() => { sglow(ctx, 20, LY, 30, '255,250,235', 0.9 * bmA); });
-      // the mouth opening while it drains
-      if (drA > 0.05) {
-        ctx.beginPath(); ctx.moveTo(-4, -298);
-        for (let i = 0; i <= 6; i++) ctx.lineTo(-4 + i * 4.4, -298 - (i % 2 ? 3 : 0) - drA * 2);
-        ctx.quadraticCurveTo(26, -298 + drA * 10, 10, -294 + drA * 11); ctx.quadraticCurveTo(-4, -294 + drA * 9, -4, -298); ctx.closePath();
-        ctx.fillStyle = '#05020a'; ctx.fill();
+      ctx.restore();
+      body(); ctx.strokeStyle = OUT; ctx.lineWidth = 3.2; ctx.stroke();
+      ctx.strokeStyle = RIM; ctx.lineWidth = 1.3; smooth(pts.slice(1, 7).map((p) => [p[0] + 1.5, p[1] + 1]), false); ctx.stroke();
+
+      // ---- fangs of foam and water ----
+      const fang = (b, tg, L, hw, hook) => {
+        let n = [-tg[1], tg[0]]; if (n[0] * (MC[0] - b[0]) + n[1] * (MC[1] - b[1]) < 0) n = [-n[0], -n[1]];
+        const tx = b[0] + n[0] * L + tg[0] * hook, ty = b[1] + n[1] * L + tg[1] * hook;
+        ctx.beginPath(); ctx.moveTo(b[0] - tg[0] * hw - n[0] * 4, b[1] - tg[1] * hw - n[1] * 4);
+        ctx.quadraticCurveTo(b[0] - tg[0] * hw * 0.5 + n[0] * L * 0.55, b[1] - tg[1] * hw * 0.5 + n[1] * L * 0.55, tx, ty);
+        ctx.quadraticCurveTo(b[0] + tg[0] * hw * 0.9 + n[0] * L * 0.45, b[1] + tg[1] * hw * 0.9 + n[1] * L * 0.45, b[0] + tg[0] * hw - n[0] * 4, b[1] + tg[1] * hw - n[1] * 4);
+        ctx.closePath();
+        ctx.fillStyle = sv > 0.3 ? '#9fb8b8' : '#cfeae6'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.7; ctx.stroke();
+        ctx.strokeStyle = 'rgba(40,96,110,.55)'; ctx.lineWidth = 2.2; ctx.beginPath();
+        ctx.moveTo(b[0] + tg[0] * hw * 0.5, b[1] + tg[1] * hw * 0.5); ctx.quadraticCurveTo(b[0] + n[0] * L * 0.4, b[1] + n[1] * L * 0.4, tx - n[0] * 3, ty - n[1] * 3); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(b[0] - tg[0] * hw * 0.5, b[1] - tg[1] * hw * 0.5); ctx.quadraticCurveTo(b[0] - tg[0] * hw * 0.3 + n[0] * L * 0.5, b[1] - tg[1] * hw * 0.3 + n[1] * L * 0.5, tx, ty); ctx.stroke();
+      };
+      const UL = [46, 30, 40, 24, 22, 13], LL = [12, 20, 16, 28, 22, 34];
+      for (let i = 0; i < 6; i++) { const s = 0.06 + i * 0.165, a = along(UP, s); fang(a, [a[2], a[3]], UL[i] * (1 - sv * 0.15), lerp(10, 5, s), lerp(14, 5, s)); }
+      for (let i = 0; i < 6; i++) { const s = 0.12 + i * 0.165, a = along(LO, s); fang(a, [a[2], a[3]], LL[i] * (1 - sv * 0.15), lerp(5, 9, s), -lerp(3, 10, s)); }
+      // foam rims on both lips
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(206,244,242,${(0.65 * foamA).toFixed(3)})`; ctx.lineWidth = 2.6;
+      smooth(UP.slice(0, 6), false); ctx.stroke(); smooth(LO.slice(1), false); ctx.stroke();
+
+      // ---- foam crest, the rolling curl, flung spray ----
+      const CR = pts.slice(4, 13);
+      ctx.strokeStyle = `rgba(170,236,236,${(0.32 * foamA).toFixed(3)})`; ctx.lineWidth = 11; smooth(CR, false); ctx.stroke();
+      ctx.strokeStyle = `rgba(232,252,250,${(0.9 * foamA).toFixed(3)})`; ctx.lineWidth = 2.6; smooth(pts.slice(5, 13), false); ctx.stroke();
+      ctx.fillStyle = `rgba(236,252,250,${(0.78 * foamA).toFixed(3)})`;
+      for (let i = 0; i < 16; i++) { const a = along(CR, 0.08 + i * 0.058), r = 2.4 + hsh(i + 5) * 3.6 + Math.sin(t * 3 + i) * 0.8; circ(ctx, a[0] + a[3] * 3 + Math.sin(t * 2 + i) * 1.5, a[1] - a[2] * 3, r); ctx.fill(); }
+      {
+        // the rolling barrel under the curling lip: a dark crescent hollow with a foam edge
+        const B = [D(150, -372), D(198, -350), D(222, -310), D(216, -268)];
+        ctx.strokeStyle = 'rgba(4,16,30,.7)'; ctx.lineWidth = 11; smooth(B, false); ctx.stroke();
+        ctx.strokeStyle = `rgba(150,226,226,${(0.5 * foamA).toFixed(3)})`; ctx.lineWidth = 2;
+        smooth(B.map((p) => [p[0] - 7, p[1] + 5]), false); ctx.stroke();
+        // claw-like fingers of water curling forward and down off the breaking crest
+        const claw = (a, L, wd, sw2) => {
+          const tg = [a[2], a[3]], n = [a[3], -a[2]];           // tangent along the crest, outward normal
+          const P0 = [a[0] - n[0] * 4, a[1] - n[1] * 4], P1 = [a[0] + n[0] * L * 0.55 + tg[0] * L * 0.25, a[1] + n[1] * L * 0.55 + tg[1] * L * 0.25];
+          const P2 = [a[0] + n[0] * L * 0.45 + tg[0] * L * 0.95 + sw2, a[1] + n[1] * L * 0.45 + tg[1] * L * 0.95];
+          const P3 = [a[0] + tg[0] * L * 1.05 - n[0] * L * 0.25 + sw2, a[1] + tg[1] * L * 1.05 - n[1] * L * 0.25];
+          const C = []; for (let i = 0; i <= 10; i++) { const q = i / 10, r = 1 - q; C.push([r * r * r * P0[0] + 3 * r * r * q * P1[0] + 3 * r * q * q * P2[0] + q * q * q * P3[0], r * r * r * P0[1] + 3 * r * r * q * P1[1] + 3 * r * q * q * P2[1] + q * q * q * P3[1]]); }
+          const Lp = [], Rp = [];
+          for (let i = 0; i < C.length; i++) { const p0 = C[Math.max(0, i - 1)], p1 = C[Math.min(C.length - 1, i + 1)], dx = p1[0] - p0[0], dy = p1[1] - p0[1], d = Math.hypot(dx, dy) || 1, ww = wd * (1 - i / 10) + 0.8; Lp.push([C[i][0] - dy / d * ww, C[i][1] + dx / d * ww]); Rp.push([C[i][0] + dy / d * ww, C[i][1] - dx / d * ww]); }
+          ctx.beginPath(); ctx.moveTo(Lp[0][0], Lp[0][1]); for (const p of Lp) ctx.lineTo(p[0], p[1]); for (let i = Rp.length - 1; i >= 0; i--) ctx.lineTo(Rp[i][0], Rp[i][1]); ctx.closePath();
+          ctx.fillStyle = '#2b6e76'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; ctx.stroke();
+          ctx.strokeStyle = `rgba(232,252,250,${(0.85 * foamA).toFixed(3)})`; ctx.lineWidth = 2.2;
+          ctx.beginPath(); for (let i = 1; i < 10; i++) { const p = Rp[i]; if (i === 1) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); } ctx.stroke();
+          ctx.fillStyle = `rgba(236,252,250,${(0.85 * foamA).toFixed(3)})`; circ(ctx, C[10][0], C[10][1], 2.4); ctx.fill();
+        };
+        for (let i = 0; i < 5; i++) claw(along(pts.slice(8, 13), 0.08 + i * 0.21), [44, 56, 66, 60, 46][i] * (1 - sv * 0.3), 9 + (i % 2) * 2, Math.sin(t * 2.2 + i * 1.3) * 3);
       }
-      // two eyes inside the glass (look forward; narrow when starving)
-      const ey = -312 + sv * 3, eo = bmA * 3;
-      add(() => sglow(ctx, 12 + eo, ey, 22, '255,170,240', (0.45 + lamp * 0.4) * (1 - sv * 0.5)));
-      for (const [x, r] of [[4 + eo, 3.6], [19 + eo, 3.2]]) {
-        ctx.fillStyle = '#ffd8f6'; ell(ctx, x, ey, r, (1.8 - sv * 0.9) * eBlink(t + 2.1, 4.6), -0.25); ctx.fill();
-        ctx.strokeStyle = '#120818'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x - r - 1, ey - 3.4); ctx.lineTo(x + r + 1, ey - 0.8); ctx.stroke();
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        const q = (t * 0.35 + i / 4) % 1, a = along(CR, 0.45 + i * 0.12);
+        ctx.strokeStyle = `rgba(214,244,244,${(0.22 * Math.sin(q * Math.PI) * foamA).toFixed(3)})`; ctx.lineWidth = 7 - i;
+        ctx.beginPath(); ctx.moveTo(a[0], a[1] - 4); ctx.quadraticCurveTo(a[0] - 30 - q * 30, a[1] - 26 - q * 16, a[0] - 70 - q * 50, a[1] - 18 - q * 30); ctx.stroke();
+      }
+      const spN = 14 + Math.round(slW * 8);
+      for (let i = 0; i < spN; i++) {
+        const q = (t * (0.55 + slW * 0.5) + hsh(i + 40)) % 1, a = along(CR, 0.2 + hsh(i + 41) * 0.75);
+        const x = a[0] + (-30 - hsh(i + 42) * 70) * q, y = a[1] + (-30 - hsh(i + 43) * 60) * q + 90 * q * q;
+        ctx.fillStyle = `rgba(222,246,246,${(0.75 * (1 - q) * foamA).toFixed(3)})`; circ(ctx, x, y, 1.2 + hsh(i + 44) * 2.2); ctx.fill();
+      }
+      if (sv > 0.05) {   // starving: water sloughs off the slack jaw
+        for (let i = 0; i < 5; i++) {
+          const q = (t * 0.8 + hsh(i + 80)) % 1, a = along(LO, 0.3 + i * 0.15);
+          ctx.fillStyle = `rgba(150,190,200,${(0.6 * sv * (1 - q)).toFixed(3)})`; circ(ctx, a[0], a[1] + 6 + q * 70, 2 + hsh(i) * 1.5); ctx.fill();
+        }
+      }
+      ctx.lineCap = 'butt';
+
+      // ---- head: light-core crack (beam source) and the red eyes ----
+      ctx.save(); headT();
+      {
+        const crk = [[2, -330], [12, -321], [21, -317], [30, -308], [40, -303], [46, -292]];
+        add(() => {
+          sglow(ctx, LX + 30, LY, 26 + lamp * 18, '255,236,200', (0.3 + lamp * 0.45) * flick);
+          for (const p of crk) sglow(ctx, p[0], p[1], 10, '255,240,220', 0.35 * lamp);
+        });
+        const path = () => { ctx.beginPath(); ctx.moveTo(crk[0][0], crk[0][1]); for (let i = 1; i < crk.length; i++) ctx.lineTo(crk[i][0], crk[i][1]); };
+        ctx.lineCap = 'round';
+        path(); ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.stroke();
+        path(); ctx.strokeStyle = `rgba(255,244,226,${(0.5 + lamp * 0.5).toFixed(3)})`; ctx.lineWidth = 1.8; ctx.stroke();
+        ctx.lineCap = 'butt';
+        // the core swelling open for the beam: one round bright point
+        if (bmA > 0.02) add(() => { sglow(ctx, LX + 30, LY, 40, '255,250,235', 0.95 * bmA); sglow(ctx, LX + 30, LY, 16, '255,255,255', 0.8 * bmA); });
+      }
+      const eyeA = (0.6 + lamp * 0.4) * (1 - sv * 0.55) * (1 + slW * 0.3);
+      const EYES = [[106, -326, 10.5, 1, 2.1], [162, -294, 6, 0.7, 3.3], [-22, -262, 4.4, 0.55, 0.7]];
+      for (const [x, y, r, s, bo] of EYES) {
+        add(() => { sglow(ctx, x, y, r * 6.5, '255,50,40', 0.5 * eyeA * s); sglow(ctx, x, y, r * 2.4, '255,120,90', 0.7 * eyeA); });
+        ell(ctx, x, y, r * 1.9, r * 1.35, -0.2); ctx.fillStyle = 'rgba(4,10,18,.85)'; ctx.fill();
+        const ry = r * 0.8 * eBlink(t + bo, 4.6) * (1 - sv * 0.6);
+        ell(ctx, x, y, r, ry, -0.2); ctx.fillStyle = sv > 0.3 ? '#9a3a36' : '#ec3e2e'; ctx.fill();
+        ell(ctx, x - r * 0.12, y, r * 0.4, Math.min(r * 0.4, ry * 0.6), -0.2); ctx.fillStyle = sv > 0.3 ? '#d08070' : '#ffd8bc'; ctx.fill();
+        ctx.strokeStyle = 'rgba(4,10,18,.9)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x - r * 1.4, y - r * 1.05); ctx.quadraticCurveTo(x, y - r * 1.35, x + r * 1.5, y - r * 0.55); ctx.stroke();
       }
       ctx.restore();
-      // mullions + sill
-      ctx.fillStyle = '#150c22'; ctx.fillRect(-10, GY0, 3.4, GY1 - GY0); ctx.fillRect(7, GY0, 3.4, GY1 - GY0);
-      ctx.strokeStyle = 'rgba(220,200,240,.12)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(GX0 + 3, GY0 + 3); ctx.lineTo(GX0 + 12, GY0 + 3); ctx.stroke();
-      ctx.beginPath(); rr(ctx, -36, -286, 72, 6, 2); ctx.fillStyle = '#3e3044'; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2; ctx.stroke();
-      // phase 2: the glass is cracked
-      if (P2) { ctx.strokeStyle = 'rgba(255,236,220,.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-22, -328); ctx.lineTo(-16, -316); ctx.lineTo(-20, -304); ctx.moveTo(-16, -316); ctx.lineTo(-12, -312); ctx.moveTo(24, -290); ctx.lineTo(18, -300); ctx.stroke(); }
-      // dome: warped, slumping back, cracked
-      ctx.beginPath(); rr(ctx, -38, -341, 76, 7, 2); ctx.fillStyle = '#4a3a52'; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 2.2; ctx.stroke();
-      const dome = () => { ctx.beginPath(); ctx.moveTo(-37, -340); ctx.bezierCurveTo(-38, -366, -24, -382, -10, -382); ctx.bezierCurveTo(6, -381, 30, -366, 36, -340); ctx.closePath(); };
-      dome(); ctx.fillStyle = lgc(ctx, 'dev-dome', -38, 0, 38, 0, [[0, '#0e0818'], [0.6, '#2a1c3a'], [1, '#160d22']]); ctx.fill();
-      ctx.strokeStyle = DINK; ctx.lineWidth = 2.8; ctx.stroke();
-      ctx.strokeStyle = RIM; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-36, -344); ctx.bezierCurveTo(-37, -366, -24, -381, -10, -381); ctx.stroke();
-      ctx.strokeStyle = 'rgba(180,150,200,.25)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-14, -342); ctx.quadraticCurveTo(-14, -366, -10, -380); ctx.moveTo(14, -342); ctx.quadraticCurveTo(8, -364, -4, -380); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,236,220,.45)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(18, -346); ctx.lineTo(12, -356); ctx.lineTo(16, -364); ctx.stroke();
-      // bent finial with a tarnished knob
-      ctx.strokeStyle = DINK; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-10, -382); ctx.quadraticCurveTo(-12, -392, -22, -396); ctx.stroke();
-      ctx.strokeStyle = '#6a5a62'; ctx.lineWidth = 1.8; ctx.stroke(); ctx.lineCap = 'butt';
-      circ(ctx, -24, -397, 4.4); ctx.fillStyle = '#7a6a6a'; ctx.fill(); ctx.strokeStyle = DINK; ctx.lineWidth = 1.8; ctx.stroke();
-      // ink dripping from the eaves
-      ctx.fillStyle = '#0a0414';
-      for (let i = 0; i < 3; i++) drip(-28 + i * 26, -334, 5 + (Math.sin(t * 1.4 + i * 2.2) + 1) * 4, 2.2);
-      ctx.restore();
 
-      // ---- near arm (in front) ----
-      const slamming = slW > 0 || slR > 0;
-      const wrN = arm(shN, hN, true, slamming);
-      mantle();
-      // curved swoosh behind the claw while it comes down (an arc, not a ray)
-      if (slR > 0 && slK < 0.98 && slK > 0.05) {
-        ctx.strokeStyle = `rgba(230,200,255,${(0.5 * (1 - slK)).toFixed(3)})`; ctx.lineWidth = 6; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.arc(shN[0], shN[1], 170, -1.25, lerp(-1.25, 0.95, slK)); ctx.stroke(); ctx.lineCap = 'butt';
+      ctx.restore();
+      // ===== end leaned frame (body) =====
+
+      // ---- surf churning at its base ----
+      ctx.fillStyle = `rgba(214,244,244,${(0.55 * foamA).toFixed(3)})`;
+      for (let i = 0; i < 18; i++) { const x = -182 + i * 22 + Math.sin(t * 1.3 + i) * 6, r = 3 + hsh(i + 20) * 4 + (Math.sin(t * 2.4 + i * 1.7) + 1) * 1.5; ell(ctx, x, -3 - hsh(i + 21) * 6, r * 1.8, r * 0.7); ctx.fill(); }
+      ctx.strokeStyle = `rgba(214,244,244,${(0.5 * foamA).toFixed(3)})`; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      ctx.beginPath(); for (let i = 0; i < 6; i++) { const x = -150 + i * 64 + Math.sin(t + i) * 8; ctx.moveTo(x - 16, -4); ctx.quadraticCurveTo(x, -12 - (Math.sin(t * 2 + i) + 1) * 3, x + 16, -4); } ctx.stroke();
+      ctx.lineCap = 'butt';
+
+      // ---- slam: the crest's lip comes crashing down as a falling sheet of water ----
+      if (slR > 0 && slK > 0.05 && slBack < 0.98) {
+        const L0 = leanP(30 + (232 - 30) * XS, -262), G = [192, -2], k = slK, fa = 1 - slBack;
+        const C1 = [L0[0] + 46, lerp(L0[1], G[1], 0.35)];
+        const P = []; for (let i = 0; i <= 12; i++) { const s = i / 12 * k, r = 1 - s; P.push([r * r * L0[0] + 2 * r * s * C1[0] + s * s * G[0], r * r * L0[1] + 2 * r * s * C1[1] + s * s * G[1]]); }
+        const Lp = [], Rp = [];
+        for (let i = 0; i < P.length; i++) {
+          const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, ww = lerp(12, 26, i / 12);
+          Lp.push([P[i][0] - dy / d * ww, P[i][1] + dx / d * ww]); Rp.push([P[i][0] + dy / d * ww, P[i][1] - dx / d * ww]);
+        }
+        ctx.globalAlpha *= fa;
+        ctx.beginPath(); ctx.moveTo(Lp[0][0], Lp[0][1]); for (const p of Lp) ctx.lineTo(p[0], p[1]); for (let i = Rp.length - 1; i >= 0; i--) ctx.lineTo(Rp[i][0], Rp[i][1]); ctx.closePath();
+        ctx.fillStyle = 'rgba(52,128,140,.82)'; ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = 'rgba(226,250,250,.8)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+        ctx.beginPath(); for (let i = 0; i < Rp.length; i++) { if (!i) ctx.moveTo(Rp[i][0], Rp[i][1]); else ctx.lineTo(Rp[i][0], Rp[i][1]); } ctx.stroke();
+        ctx.strokeStyle = 'rgba(200,240,240,.35)'; ctx.lineWidth = 1.4; ctx.beginPath();
+        for (let i = 0; i < P.length; i++) { if (!i) ctx.moveTo(P[i][0], P[i][1]); else ctx.lineTo(P[i][0], P[i][1]); } ctx.stroke();
+        ctx.lineCap = 'butt';
+        ctx.globalAlpha /= fa;
       }
 
-      // ---- drain: curved streams of round motes spiralling INTO the lantern ----
+      // ===== leaned frame again: drain, beam, shield =====
+      ctx.save(); leanT();
+
+      // ---- drain: curved streams of round motes spiralling INTO the maw ----
       if (drA > 0.02) {
-        ctx.save(); headT();
-        add(() => sglow(ctx, LX + 2, LY, 90 + drA * 40, '235,210,255', 0.35 * drA));
+        const MX = 30 + (MC[0] - 20 - 30) * XS, MY = MC[1];
+        add(() => sglow(ctx, MX, MY, 90 + drA * 40, '235,190,230', 0.35 * drA));
         const COLS = ['255,214,160', '255,190,220', '190,226,255', '214,255,214', '235,214,255'];
         for (let i = 0; i < 6; i++) {
           const a0 = i * 1.047 + t * 0.6;
           for (let j = 0; j < 7; j++) {
             const k = (t * 0.42 + j / 7 + i * 0.11) % 1, kk = k * k * (1.6 - 0.6 * k);
             const r = lerp(240, 8, kk) * (0.6 + drA * 0.4), a = a0 + kk * 2.7;
-            const x = LX + 2 + Math.cos(a) * r, y = LY + Math.sin(a) * r * 0.78;
+            const x = MX + Math.cos(a) * r, y = MY + Math.sin(a) * r * 0.78;
             const al = drA * Math.min(1, k * 5) * (1 - Math.pow(k, 6));
             const rad = 3.6 * (1 - kk * 0.6);
             add(() => sglow(ctx, x, y, rad * 4, COLS[(i + j) % 5], al * 0.45));
             ctx.fillStyle = `rgba(${COLS[(i + j) % 5]},${al.toFixed(3)})`; circ(ctx, x, y, rad); ctx.fill();
-            // a faint trail of tiny dots along the spiral
             for (let q = 1; q <= 3; q++) {
               const k2 = Math.max(0, kk - q * 0.03), r2 = lerp(240, 8, k2) * (0.6 + drA * 0.4), a2 = a0 + k2 * 2.7;
-              ctx.fillStyle = `rgba(${COLS[(i + j) % 5]},${(al * (0.5 - q * 0.12)).toFixed(3)})`; circ(ctx, LX + 2 + Math.cos(a2) * r2, LY + Math.sin(a2) * r2 * 0.78, rad * (1 - q * 0.22)); ctx.fill();
+              ctx.fillStyle = `rgba(${COLS[(i + j) % 5]},${(al * (0.5 - q * 0.12)).toFixed(3)})`; circ(ctx, MX + Math.cos(a2) * r2, MY + Math.sin(a2) * r2 * 0.78, rad * (1 - q * 0.22)); ctx.fill();
             }
           }
         }
-        ctx.restore();
       }
 
-      // ---- beam: ONE cone of pale light, forward (+x), angled down toward the lane ----
-      const bA = bmR > 0 ? (bmR > 0.15 ? 1 : bmR / 0.15) : bmW * 0.35;
+      // ---- beam: ONE cone of pale light from the light-core crack, forward (+x), angled down to the lane ----
       if (bA > 0.01) {
         ctx.save(); headT();
         ctx.translate(30, LY); ctx.rotate(0.62 - lean - sv * 0.1); // (steep enough to land on the lane where the beam hazard is)
@@ -5991,40 +6021,40 @@
           ctx.globalAlpha = pa;
           sglow(ctx, 0, 0, 40, '255,246,230', 0.8 * bA);
         });
-        // round motes drifting along the cone
         if (bmR > 0) for (let i = 0; i < 8; i++) { const p = (t * 0.9 + hsh(i + 3)) % 1, x = 30 + p * 520, y = (hsh(i + 7) - 0.5) * 160 * p; ctx.fillStyle = `rgba(255,248,236,${(0.7 * (1 - p) * bA).toFixed(3)})`; circ(ctx, x, y, 2 + hsh(i) * 2); ctx.fill(); }
         ctx.restore();
       }
 
-      // ---- shield: a translucent membrane around the whole body ----
+      // ---- shield: a translucent membrane of drained light around the whole wave ----
       if (sh > 0.01) {
-        const mPath = (g) => { ctx.beginPath(); for (let i = 0; i <= 48; i++) { const a = i / 48 * TAU, r = 1 + Math.sin(a * 5 + t * 2.2) * 0.012 + Math.sin(a * 3 - t * 1.4) * 0.01; const x = 10 + Math.cos(a) * (172 + g) * r, y = -205 + Math.sin(a) * (222 + g) * r; if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.closePath(); };
+        const CX = 18, CY = -206, RX = 190, RY = 232;
+        const mPath = (g) => { ctx.beginPath(); for (let i = 0; i <= 48; i++) { const a = i / 48 * TAU, r = 1 + Math.sin(a * 5 + t * 2.2) * 0.012 + Math.sin(a * 3 - t * 1.4) * 0.01; const x = CX + Math.cos(a) * (RX + g) * r, y = CY + Math.sin(a) * (RY + g) * r; if (!i) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.closePath(); };
         mPath(0); ctx.fillStyle = `rgba(150,120,240,${(0.08 * sh).toFixed(3)})`; ctx.fill();
         ctx.strokeStyle = `rgba(200,170,255,${(0.16 * sh).toFixed(3)})`; ctx.lineWidth = 12; ctx.stroke();
         ctx.strokeStyle = `rgba(225,205,255,${(0.7 * sh).toFixed(3)})`; ctx.lineWidth = 2.2; ctx.stroke();
         mPath(-6); ctx.strokeStyle = `rgba(255,190,230,${(0.28 * sh).toFixed(3)})`; ctx.lineWidth = 1.2; ctx.stroke();
         mPath(5); ctx.strokeStyle = `rgba(160,230,230,${(0.22 * sh).toFixed(3)})`; ctx.lineWidth = 1.2; ctx.stroke();
         ctx.strokeStyle = `rgba(255,255,255,${(0.45 * sh).toFixed(3)})`; ctx.lineWidth = 3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.ellipse(10, -205, 156, 206, 0, Math.PI * 1.08, Math.PI * 1.3); ctx.stroke();
-        ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(10, -205, 156, 206, 0, Math.PI * 1.36, Math.PI * 1.42); ctx.stroke(); ctx.lineCap = 'butt';
-        for (let i = 0; i < 6; i++) { const a = t * 0.3 + i * 1.05, x = 10 + Math.cos(a) * 172, y = -205 + Math.sin(a) * 222; ctx.fillStyle = `rgba(235,220,255,${(0.6 * sh).toFixed(3)})`; circ(ctx, x, y, 2.2); ctx.fill(); }
+        ctx.beginPath(); ctx.ellipse(CX, CY, RX - 16, RY - 16, 0, Math.PI * 1.08, Math.PI * 1.3); ctx.stroke();
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(CX, CY, RX - 16, RY - 16, 0, Math.PI * 1.36, Math.PI * 1.42); ctx.stroke(); ctx.lineCap = 'butt';
+        for (let i = 0; i < 6; i++) { const a = t * 0.3 + i * 1.05, x = CX + Math.cos(a) * RX, y = CY + Math.sin(a) * RY; ctx.fillStyle = `rgba(235,220,255,${(0.6 * sh).toFixed(3)})`; circ(ctx, x, y, 2.2); ctx.fill(); }
       }
       ctx.restore();
       // ===== end leaned frame =====
 
-      // ---- phase 2: the halo shattered into small falling fragments ----
+      // ---- phase 2: the halo shattered into small falling arc fragments ----
       if (P2) {
         for (let i = 0; i < 11; i++) {
           const p = (t * 0.22 + hsh(i + 30)) % 1;
-          const a = -Math.PI + hsh(i + 31) * Math.PI * 1.1;
-          const x0 = 36 + Math.cos(a) * 100 * (0.8 + hsh(i) * 0.4), y0 = -330 + Math.sin(a) * 92;
+          const a = -Math.PI + hsh(i + 31) * TAU;
+          const x0 = 70 + Math.cos(a) * HRX * (0.8 + hsh(i) * 0.4), y0 = -356 + Math.sin(a) * HRY;
           const x = x0 + (hsh(i + 32) - 0.5) * 40 * p, y = y0 + p * p * 260 + p * 30;
           const al = Math.min(1, p * 6) * (1 - p);
           ctx.save(); ctx.translate(x, y); ctx.rotate(hsh(i + 33) * 6 + t * (hsh(i + 34) - 0.5) * 3);
           add(() => sglow(ctx, 0, 0, 22, '255,226,190', 0.4 * al));
           const ln = 0.22 + hsh(i + 35) * 0.26;
           ctx.beginPath(); ctx.arc(0, 34, 34, -Math.PI / 2 - ln, -Math.PI / 2 + ln);
-          ctx.strokeStyle = `rgba(12,6,22,${al.toFixed(3)})`; ctx.lineWidth = 8.5; ctx.stroke();
+          ctx.strokeStyle = `rgba(4,16,26,${al.toFixed(3)})`; ctx.lineWidth = 8.5; ctx.stroke();
           ctx.strokeStyle = `rgba(206,192,158,${al.toFixed(3)})`; ctx.lineWidth = 4.8; ctx.stroke();
           ctx.beginPath(); ctx.arc(0, 34, 35.2, -Math.PI / 2 - ln + 0.04, -Math.PI / 2 + ln - 0.04);
           ctx.strokeStyle = `rgba(255,244,214,${(0.7 * al).toFixed(3)})`; ctx.lineWidth = 1.2; ctx.stroke();
@@ -6032,18 +6062,17 @@
         }
       }
 
-      // ---- slam impact on the floor: expanding ellipse rings + ink splashes ----
+      // ---- slam impact on the floor: expanding ellipse rings + thrown water ----
       if (slR > 0 && slK > 0.9) {
         const k = clamp01((0.72 - slR) / 0.5), ix = 186;
-        ctx.strokeStyle = `rgba(230,190,255,${(0.75 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3.4;
+        ctx.strokeStyle = `rgba(200,246,246,${(0.8 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3.4;
         ell(ctx, ix, -2, 24 + k * 80, 6 + k * 11); ctx.stroke();
         ctx.lineWidth = 1.6; ell(ctx, ix, -2, 12 + k * 46, 3 + k * 6); ctx.stroke();
-        ctx.fillStyle = `rgba(14,6,26,${(0.85 * (1 - k)).toFixed(3)})`;
-        for (let i = 0; i < 6; i++) { const sx = ix - 50 + i * 20 + Math.sin(i * 2.7) * 6, sy = -8 - k * (20 + (i % 3) * 14) + k * k * 30; circ(ctx, sx, sy, 4 + (i % 2) * 2); ctx.fill(); }
+        for (let i = 0; i < 8; i++) { const sx2 = ix - 60 + i * 17 + Math.sin(i * 2.7) * 6, sy2 = -8 - k * (24 + (i % 3) * 16) + k * k * 34; ctx.fillStyle = i % 2 ? `rgba(60,140,150,${(0.85 * (1 - k)).toFixed(3)})` : `rgba(226,250,250,${(0.85 * (1 - k)).toFixed(3)})`; circ(ctx, sx2, sy2, 3.5 + (i % 2) * 2); ctx.fill(); }
       }
-      // ink motes rising
-      ctx.fillStyle = 'rgba(200,140,255,.7)';
-      for (let i = 0; i < 7; i++) { const p = (t * 0.28 + i / 7) % 1, mx = -80 + i * 26 + Math.sin(t + i) * 8; circ(ctx, mx, -30 - p * 300, 1.4); ctx.fill(); }
+      // faded dream motes rising off the water
+      const MCOL = ['230,190,200', '230,210,170', '200,190,235', '170,225,220'];
+      for (let i = 0; i < 7; i++) { const p = (t * 0.28 + i / 7) % 1, mx = -110 + i * 36 + Math.sin(t + i) * 8; ctx.fillStyle = `rgba(${MCOL[i % 4]},${(0.75 * Math.sin(p * Math.PI)).toFixed(3)})`; circ(ctx, mx, -30 - p * 320, 1.5); ctx.fill(); }
     },
 
     // ---------------- ボス「異端の魔女」 ----------------

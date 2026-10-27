@@ -647,6 +647,7 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
 .mem-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px 10px; border-radius: 14px; background: linear-gradient(180deg, rgba(30,44,90,.7), rgba(10,14,36,.85)); border: 1px solid rgba(150,200,255,.28); color: var(--ink); cursor: pointer; }
 .mem-card:hover:not(:disabled) { border-color: #cfe6ff; box-shadow: 0 0 18px rgba(150,200,255,.3); }
 .mem-card canvas { width: 140px; height: 140px; }
+.mem-card img.mem-art { width: 140px; height: 140px; object-fit: cover; object-position: center 30%; border-radius: 10px; box-shadow: 0 0 0 1px rgba(170,210,255,.25); }
 .mem-card b { font: 800 15px var(--f-display); letter-spacing: .06em; text-align: center; min-height: 2.6em; display: flex; align-items: center; }
 .mem-card.locked { cursor: default; background: rgba(10,14,36,.7); border-color: rgba(147,163,207,.18); }
 .mem-card.locked b { color: #66708f; }
@@ -659,6 +660,7 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
 .mem-sheet { position: relative; width: 1120px; max-height: 660px; display: grid; grid-template-columns: 330px 1fr; gap: 30px; padding: 30px 36px; border-radius: 20px; background: linear-gradient(180deg, rgba(18,28,64,.97), rgba(8,12,32,.98)); border: 1px solid rgba(170,210,255,.4); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
 .mem-sheet aside { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .mem-sheet aside canvas { width: 260px; height: 260px; border-radius: 16px; background: radial-gradient(circle at 50% 60%, rgba(120,170,255,.22), rgba(5,8,26,0) 70%); }
+.mem-sheet aside img.mem-art.big { width: 260px; height: 330px; object-fit: contain; border-radius: 14px; background: #10162e; box-shadow: 0 0 0 1px rgba(170,210,255,.3), 0 10px 30px rgba(0,0,0,.5); }
 .mem-sheet h3 { margin: 0; font: 800 30px var(--f-display); letter-spacing: .08em; color: #eef6ff; }
 .mem-k { font-size: 14px; color: #cfe6ff; letter-spacing: .08em; }
 .mem-sheet dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 8px 0 0; font-size: 15px; text-align: left; }
@@ -672,12 +674,14 @@ html.rot .coach-bubble { width: 900px; } html.rot .coach-bubble p { font-size: 2
 @media (max-height: 520px) {
   .t-mem { left: 196px; }
   .mem-head h2 { font-size: 46px; } .mem-head p { font-size: 19px; } .mem-count { font-size: 24px; }
-  .mem-card b { font-size: 19px; } .mem-card canvas { width: 150px; height: 150px; }
+  .mem-card b { font-size: 19px; } .mem-card canvas, .mem-card img.mem-art { width: 150px; height: 150px; }
+  .mem-sheet aside img.mem-art.big { height: 300px; }
   .mem-sheet { height: 680px; max-height: 680px; } .mem-main section h4 { font-size: 24px; } .mem-main section p { font-size: 22px; } .mem-sheet dl { font-size: 19px; } .mem-k { font-size: 18px; }
 }
 html.rot .t-mem { left: 196px; }
 html.rot .mem-head h2 { font-size: 46px; } html.rot .mem-head p { font-size: 19px; } html.rot .mem-count { font-size: 24px; }
-html.rot .mem-card b { font-size: 19px; } html.rot .mem-card canvas { width: 150px; height: 150px; }
+html.rot .mem-card b { font-size: 19px; } html.rot .mem-card canvas, html.rot .mem-card img.mem-art { width: 150px; height: 150px; }
+html.rot .mem-sheet aside img.mem-art.big { height: 300px; }
 html.rot .mem-sheet { height: 680px; max-height: 680px; } html.rot .mem-main section h4 { font-size: 24px; } html.rot .mem-main section p { font-size: 22px; } html.rot .mem-sheet dl { font-size: 19px; } html.rot .mem-k { font-size: 18px; }
 </style>
 </head>
