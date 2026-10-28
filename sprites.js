@@ -231,5 +231,48 @@
     },
   };
   Art.useSprite('paladin', PALADIN);
-  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN }[k] || SWORD).pick(u);   // (test hook)
+
+  // バーサーカー（2026-10-28 ユーザー提供のコマ絵 4枚：待機・歩き／攻撃／怒りの攻撃／固有能力「もう一度立つ」）
+  //   idle1〜4: 板の剣を担いで待つ、idle5〜8: ずんずん歩く
+  //   atk1: 構え、atk2〜4: 振り上げる、atk5〜7: 叩きつける、atk8: 担ぎ直す
+  //   rage1〜8: HPが半分を切ったあとの攻撃（赤い火の粉をまとい、振りが荒い）
+  //   rise1〜8: 倒れる一撃を受けて膝をつき、はちまきを締め直して立ち上がる
+  const RISE = [0.12, 0.32, 0.5, 0.7, 0.9, 1.05, 1.2, 1.4];   // 各コマが終わる時間（秒）
+  const BERSERK = {
+    src: 'sprites/berserker.webp',
+    px: 2.5,
+    frames: {"idle1":[0,0,131,164,75.6,161.9],"idle2":[133,0,134,165,75.4,162.2],"idle3":[269,0,131,159,72.6,156.3],"idle4":[402,0,132,165,73.7,162.6],"idle5":[536,0,135,156,81.3,153.0],"idle6":[673,0,132,152,75.6,149.3],"idle7":[807,0,133,152,78.5,149.3],"idle8":[942,0,131,151,79.8,148.5],"atk1":[1075,0,137,171,70.0,168.4],"atk2":[1214,0,146,172,67.8,168.4],"atk3":[0,174,141,197,70.6,193.6],"atk4":[143,174,141,181,72.6,178.0],"atk5":[286,174,150,138,67.2,134.0],"atk6":[438,174,151,145,64.8,140.4],"atk7":[591,174,147,134,57.8,129.6],"atk8":[740,174,157,172,94.4,169.2],"rage1":[899,174,129,150,61.9,147.8],"rage2":[1030,174,119,169,59.1,166.8],"rage3":[1151,174,126,171,63.5,168.9],"rage4":[0,373,133,169,59.8,166.1],"rage5":[135,373,133,134,68.3,129.8],"rage6":[270,373,143,107,78.8,104.1],"rage7":[415,373,127,159,64.4,156.6],"rage8":[544,373,127,149,61.2,146.4],"rise1":[673,373,140,159,65.8,155.3],"rise2":[815,373,140,122,64.9,117.9],"rise3":[957,373,136,133,61.0,128.2],"rise4":[1095,373,136,164,64.9,159.8],"rise5":[1233,373,137,162,112.2,157.6],"rise6":[0,544,140,148,99.2,143.4],"rise7":[142,544,140,163,62.4,160.6],"rise8":[284,544,133,171,74.0,168.6]},
+    pick(u) {
+      const mv = walking(u), t = u.anim || 0, at = u.atk || 0, rage = (u.frenzy || 0) >= 0.7;   // HP 50%以下
+      if (u.rose && !u.sprRose) { u.sprRose = true; u.sprRoseS = t; }
+      const e = u.sprRoseS != null ? t - u.sprRoseS : 99;
+      if (e < RISE[7]) { u.sprFight = t; let i = 0; while (e >= RISE[i]) i++; return 'rise' + (i + 1); }
+      const set = rage ? 'rage' : 'atk';
+      if (at > 0.01) {
+        u.sprFight = t;
+        if (rage) return 'rage' + (at > 0.8 ? 4 : at > 0.55 ? 5 : at > 0.3 ? 6 : 7);
+        return 'atk' + (at > 0.75 ? 5 : at > 0.5 ? 6 : at > 0.25 ? 7 : 8);
+      }
+      if (!mv && u.sprFight != null && t - u.sprFight < 1.8) {
+        const W = 0.36;
+        if (u.cool > 0 && u.cool <= W) {
+          const q = 1 - u.cool / W;
+          return rage ? 'rage' + (q < 0.5 ? 2 : 3) : 'atk' + (q < 0.34 ? 2 : q < 0.67 ? 3 : 4);
+        }
+        return set + '1';
+      }
+      if (mv) return 'idle' + (5 + Math.floor(t * 9) % 4);
+      return 'idle' + (1 + Math.floor((t + (u.id || 0) * 0.8) * 1.8) % 4);
+    },
+    // 怒り: HPが減るほど、体のまわりに赤い光がうっすら脈打つ
+    under(ctx, u) {
+      const f = u.frenzy || 0;
+      if (!(f > 0.3)) return;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      Art.glow(ctx, 0, -30, 40 + Math.sin((u.anim || 0) * 7) * 3, 'rgba(255,70,50,A)', 0.35 * (f - 0.3) / 0.7);
+      ctx.restore();
+    },
+  };
+  Art.useSprite('berserker', BERSERK);
+  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN, berserker: BERSERK }[k] || SWORD).pick(u);   // (test hook)
 })();
