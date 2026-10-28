@@ -1311,9 +1311,10 @@
       const I = INNATE.sniper; h.dmg *= 1 + I.max * clamp((Math.abs(tgt.x - a.x) - I.from) / (I.to - I.from), 0, 1); // 固有能力 遠くの景色
     }
     // 固有能力 届けたい言葉（弓兵）: the 4th arrow in a row at the same enemy is always a critical hit
+    let letter = a.kind === 'archer' ? 1 : 0;   // 弓兵の矢は紙飛行機（2 = 届けたい言葉の光る手紙）
     if (a.kind === 'archer' && !delay) {
       if (a.aimId === tgt.id) a.innC = (a.innC || 0) + 1; else { a.aimId = tgt.id; a.innC = 1; }
-      if (a.innC >= INNATE.archer.every) { a.innC = 0; if (!h.crit) { h.dmg *= 1.8; h.crit = true; } }
+      if (a.innC >= INNATE.archer.every) { a.innC = 0; letter = 2; if (!h.crit) { h.dmg *= 1.8; h.crit = true; } }
       a.pipN = a.innC;
     }
     // 固有能力 待ち続けた火（炎の魔法使い）: each shot without being hurt is stronger
@@ -1321,7 +1322,7 @@
     const lob = d.shot === 'orb' || d.shot === 'ice' || d.shot === 'bomb', snipe = d.shot === 'snipe', fast = d.shot === 'bullet';
     const dur = d.shot === 'bomb' ? 0.7 : lob ? (d.shot === 'ice' ? 0.42 : 0.55) : snipe ? Math.max(0.08, dist / 3200) : fast ? Math.max(0.06, dist / 1800) : Math.max(0.18, dist / 700);
     const arc = d.shot === 'bomb' ? 70 : d.shot === 'orb' ? 40 : d.shot === 'ice' ? 22 : snipe || fast ? 0 : 18 + dist * 0.05;
-    G.shots.push({ kind: d.shot, from: a, x0, y0, x: x0, y: y0, tx: tgt.x, ty: hitY(tgt), target: tgt, t: -(delay || 0), dur, arc, dmg: h.dmg, crit: h.crit, pen: d.pen || 0, aoe: (d.aoe || 0) * (1 + (m.blast || 0) + (m.bigball || 0)), slow: d.slow || 0, slowTime: d.slowTime || 0, knock: d.knock || 0, stall: m.stall || 0, balloon });
+    G.shots.push({ kind: d.shot, from: a, x0, y0, x: x0, y: y0, tx: tgt.x, ty: hitY(tgt), target: tgt, t: -(delay || 0), dur, arc, dmg: h.dmg, crit: h.crit, pen: d.pen || 0, aoe: (d.aoe || 0) * (1 + (m.blast || 0) + (m.bigball || 0)), slow: d.slow || 0, slowTime: d.slowTime || 0, knock: d.knock || 0, stall: m.stall || 0, balloon, letter });
     Sound.play(snipe ? 'snipe' : d.shot === 'bomb' ? 'toss' : fast ? 'pop' : 'shoot');
     // 固有能力 三連発（花火師）: every 5th bomb also sends up three small fireworks further ahead
     if (a.kind === 'pyro' && !delay) {
@@ -2393,7 +2394,17 @@
     // projectiles
     for (const s of G.shots) {
       if (s.t < 0) continue;
-      if (s.kind === 'arrow') {
+      if (s.kind === 'arrow' && s.letter) {
+        // 弓兵: a paper plane (届けたい言葉: a glowing golden one with a light trail)
+        const ang = Math.atan2(s.y - (s.py == null ? s.y : s.py), s.x - (s.px == null ? s.x - 1 : s.px));
+        if (s.letter === 2) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; Art.glow(ctx, s.x, s.y, 26, 'rgba(255,215,120,A)', 0.8); ctx.restore(); }
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang);
+        if (s.letter === 2) { ctx.strokeStyle = 'rgba(255,230,160,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-34, 0); ctx.lineTo(-8, 0); ctx.stroke(); }
+        ctx.fillStyle = s.letter === 2 ? '#ffe9a8' : '#f6f1e4'; ctx.strokeStyle = s.letter === 2 ? '#b98a2e' : '#6a6458'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-8, -6); ctx.lineTo(-4, 0); ctx.lineTo(-8, 5); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-4, 0); ctx.stroke();
+        ctx.restore();
+      } else if (s.kind === 'arrow') {
         const ang = Math.atan2(s.y - (s.py == null ? s.y : s.py), s.x - (s.px == null ? s.x - 1 : s.px));
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(ang);
         ctx.strokeStyle = '#f2f6ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(6, 0); ctx.stroke();

@@ -274,5 +274,38 @@
     },
   };
   Art.useSprite('berserker', BERSERK);
-  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN, berserker: BERSERK }[k] || SWORD).pick(u);   // (test hook)
+
+  // 弓兵（2026-10-28 ユーザー提供のコマ絵 3枚：待機・歩き／攻撃／固有能力「届けたい言葉」）
+  //   idle1〜4: 手紙を抱いて待つ（3でまばたき）、idle5〜8: 歩き
+  //   atk1: 手紙を持つ、atk2: つがえる、atk3〜4: 引く、atk5: 放つ、atk6〜8: 見送る
+  //   skill1〜8: 4本目（必ず会心）。光る手紙をつがえて放ち、届いたのを見て微笑む
+  //   飛んでいく紙飛行機は、コマ絵からは外してゲームの弾（紙飛行機）で描く
+  const ARCHER = {
+    src: 'sprites/archer.webp',
+    px: 2.5,
+    frames: {"idle1":[0,0,106,158,51.9,156.7],"idle2":[108,0,106,160,50.4,158.7],"idle3":[216,0,108,159,51.8,157.7],"idle4":[326,0,110,156,54.9,154.0],"idle5":[438,0,116,150,61.7,148.7],"idle6":[556,0,115,150,65.7,148.4],"idle7":[673,0,114,150,57.8,149.0],"idle8":[789,0,115,148,61.9,146.0],"atk1":[906,0,105,158,42.2,158.3],"atk2":[1013,0,105,157,48.6,157.3],"atk3":[1120,0,109,160,48.1,160.0],"atk4":[1231,0,117,158,52.1,158.0],"atk5":[0,162,102,146,48.1,144.4],"atk6":[104,162,92,141,45.0,139.7],"atk7":[198,162,98,138,41.5,136.7],"atk8":[298,162,88,142,39.7,140.4],"skill1":[388,162,123,167,46.9,164.7],"skill2":[513,162,121,164,47.3,162.1],"skill3":[636,162,128,163,46.2,160.6],"skill4":[766,162,130,157,39.1,154.8],"skill5":[898,162,94,158,37.8,156.6],"skill6":[994,162,109,165,34.9,162.8],"skill7":[1105,162,90,162,39.2,160.3],"skill8":[1197,162,88,150,38.0,148.6]},
+    pick(u) {
+      const mv = walking(u), t = u.anim || 0, at = u.atk || 0;
+      if (at > 0.01) {
+        u.sprFight = t;
+        if (u.innC === 0) return 'skill' + (at > 0.8 ? 4 : at > 0.6 ? 5 : at > 0.35 ? 6 : 7);
+        return 'atk' + (at > 0.75 ? 5 : at > 0.5 ? 6 : at > 0.25 ? 7 : 8);
+      }
+      if (!mv && u.sprFight != null && t - u.sprFight < 1.8) {
+        const skill = u.innC === 3, W = 0.45;   // 次が4本目なら光る手紙
+        if (u.cool > 0 && u.cool <= W) {
+          const q = 1 - u.cool / W;
+          return skill ? 'skill' + (q < 0.4 ? 2 : 3) : 'atk' + (q < 0.3 ? 2 : q < 0.65 ? 3 : 4);
+        }
+        if (u.innC === 0 && t - u.sprFight < 0.9) return 'skill8';   // 届いた手紙を見て、もう1通取り出す
+        return skill ? 'skill1' : 'atk1';
+      }
+      if (mv) return 'idle' + (5 + Math.floor(t * 8) % 4);
+      const ph = (t + (u.id || 0) * 1.37) % 5;
+      if (ph > 4.6) return 'idle3';                       // まばたき
+      return 'idle' + [1, 2, 4, 2][Math.floor(t * 1.5) % 4];   // 小鳥が羽ばたく
+    },
+  };
+  Art.useSprite('archer', ARCHER);
+  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN, berserker: BERSERK, archer: ARCHER }[k] || SWORD).pick(u);   // (test hook)
 })();
