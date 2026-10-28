@@ -335,5 +335,43 @@
     },
   };
   Art.useSprite('hunter', HUNTER);
-  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN, berserker: BERSERK, archer: ARCHER, hunter: HUNTER }[k] || SWORD).pick(u);   // (test hook)
+
+  // スナイパー（2026-10-28 ユーザー提供のコマ絵 2枚：待機・歩き／攻撃）
+  //   idle1〜4: 望遠鏡を担いで待つ（3〜4でのぞく）、idle5〜8: 歩き
+  //   atk1: 望遠鏡を下に構える、atk2〜4: 肩に載せてのぞき、照準の光をためる、atk5: 撃つ、atk6: 反動、atk7: 構え直す、atk8: 下ろす
+  //   固有能力「遠くの景色」は、コマ絵ではなくゲームで描く光：遠い敵を狙うほどレンズの光と弾の光が強い
+  const SNIPE_LENS = {"atk2":[29.1,-49.4],"atk3":[24.2,-47.8],"atk4":[22.3,-45.6],"atk5":[18.0,-48.9],"atk6":[12.6,-50.4],"atk7":[23.6,-46.9]};   // 各コマのレンズの位置（足元から）
+  const SNIPER = {
+    src: 'sprites/sniper.webp',
+    px: 2.5,
+    frames: {"idle1":[0,0,114,164,48.6,161.8],"idle2":[116,0,118,162,47.5,159.6],"idle3":[236,0,126,163,54.3,160.0],"idle4":[364,0,122,163,56.1,160.0],"idle5":[488,0,118,156,66.2,154.0],"idle6":[608,0,115,156,50.4,154.0],"idle7":[725,0,118,158,59.1,155.0],"idle8":[845,0,120,156,62.8,153.3],"atk1":[967,0,104,159,40.4,155.0],"atk2":[1073,0,122,156,44.2,154.0],"atk3":[1197,0,110,151,42.6,147.6],"atk4":[0,166,111,145,48.2,141.9],"atk5":[113,166,106,152,53.0,148.3],"atk6":[221,166,117,147,62.4,143.0],"atk7":[340,166,111,148,44.9,144.7],"atk8":[453,166,103,159,41.9,155.0]},
+    pick(u) {
+      const mv = walking(u), t = u.anim || 0, at = u.atk || 0;
+      if (at > 0.01) { u.sprFight = t; return 'atk' + (at > 0.7 ? 5 : at > 0.4 ? 6 : 7); }
+      if (!mv && u.sprFight != null && t - u.sprFight < 3.2) {
+        const c = u.cool || 0;
+        if (c > 1.55) return 'atk8';                          // 撃ったあと、いったん下ろす
+        if (c > 1.0) return 'atk1';
+        return 'atk' + (c > 0.65 ? 2 : c > 0.3 ? 3 : 4);      // 肩に載せてのぞき、光をためる
+      }
+      if (mv) return 'idle' + (5 + Math.floor(t * 6) % 4);
+      // 待機: 担いで立ち、ときどき望遠鏡で遠くをのぞく
+      const ph = (t + (u.id || 0) * 1.7) % 7;
+      return ph < 3.5 ? 'idle1' : ph < 3.9 ? 'idle2' : ph < 6 ? (ph % 1 < 0.5 ? 'idle3' : 'idle4') : ph < 6.4 ? 'idle2' : 'idle1';
+    },
+    // 遠くの景色: 構えている間、レンズが光る。遠い敵ほど大きく明るい（u.farQ 0〜1）
+    over(ctx, u, name) {
+      const L = SNIPE_LENS[name];
+      if (!L) return;
+      const q = u.farQ || 0, c = u.cool || 0;
+      const charge = name === 'atk2' ? 0.35 : name === 'atk3' ? 0.7 : name === 'atk4' || name === 'atk5' ? 1 : 0.5;
+      const k = charge * (0.35 + 0.65 * q) * (1 + Math.sin((u.anim || 0) * 9) * 0.08);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      Art.glow(ctx, L[0], L[1], 5 + 9 * k, 'rgba(255,215,140,A)', 0.55 + 0.4 * k);
+      Art.glow(ctx, L[0], L[1], 2.5 + 2.5 * k, 'rgba(255,250,225,A)', 0.8);
+      ctx.restore();
+    },
+  };
+  Art.useSprite('sniper', SNIPER);
+  window.__pick = (u, k) => ({ guardian: GUARD, spearman: SPEAR, golem: GOLEM, ninja: NINJA, paladin: PALADIN, berserker: BERSERK, archer: ARCHER, hunter: HUNTER, sniper: SNIPER }[k] || SWORD).pick(u);   // (test hook)
 })();

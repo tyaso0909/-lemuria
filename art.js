@@ -7525,6 +7525,7 @@
     } else if (sp) {
       if (sp.S.under) sp.S.under(ctx, u, sp.name);   // e.g. a light behind the figure
       drawSprite(ctx, sp);
+      if (sp.S.over) sp.S.over(ctx, u, sp.name);    // e.g. a light in front of the figure
     } else if (img && img.ready) {
       ctx.drawImage(img.el, -img.w * img.ax, -img.h * img.ay, img.w, img.h);
     } else {

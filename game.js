@@ -1291,7 +1291,7 @@
 
   function fire(a, tgt, delay) {
     const d = a.def, m = a.m || {};
-    const x0 = a.x + 14 * (a.face || 1), y0 = a.y - 34;
+    const x0 = a.x + (a.kind === 'sniper' ? 30 : 14) * (a.face || 1), y0 = a.y - (a.kind === 'sniper' ? 58 : 34); // (スナイパー: from the telescope's lens)
     const dist = Math.abs(tgt.x - x0);
     const h = allyHit(a, a.atkV);
     if (d.shot === 'bolt') { chainBolt(a, tgt, h); return; }
@@ -1308,7 +1308,7 @@
     if (d.pickTough) {
       if (m.weak && (tgt.elite || tgt.boss)) h.dmg *= 1 + m.weak; // 弱点狙い
       if (m.breath && (a.idleT || 0) >= 2) { h.dmg *= 1 + m.breath; G.texts.push({ x: a.x, y: a.y - 84, v: '構え', life: 0.9, skill: true }); }
-      const I = INNATE.sniper; h.dmg *= 1 + I.max * clamp((Math.abs(tgt.x - a.x) - I.from) / (I.to - I.from), 0, 1); // 固有能力 遠くの景色
+      const I = INNATE.sniper; a.farQ = clamp((Math.abs(tgt.x - a.x) - I.from) / (I.to - I.from), 0, 1); h.dmg *= 1 + I.max * a.farQ; // 固有能力 遠くの景色 (a.farQ also brightens the lens and the shot)
     }
     // 固有能力 届けたい言葉（弓兵）: the 4th arrow in a row at the same enemy is always a critical hit
     let letter = a.kind === 'archer' ? 1 : 0;   // 弓兵の矢は紙飛行機（2 = 届けたい言葉の光る手紙）
@@ -1322,7 +1322,7 @@
     const lob = d.shot === 'orb' || d.shot === 'ice' || d.shot === 'bomb', snipe = d.shot === 'snipe', fast = d.shot === 'bullet';
     const dur = d.shot === 'bomb' ? 0.7 : lob ? (d.shot === 'ice' ? 0.42 : 0.55) : snipe ? Math.max(0.08, dist / 3200) : fast ? Math.max(0.06, dist / 1800) : Math.max(0.18, dist / 700);
     const arc = d.shot === 'bomb' ? 70 : d.shot === 'orb' ? 40 : d.shot === 'ice' ? 22 : snipe || fast ? 0 : 18 + dist * 0.05;
-    G.shots.push({ kind: d.shot, from: a, x0, y0, x: x0, y: y0, tx: tgt.x, ty: hitY(tgt), target: tgt, t: -(delay || 0), dur, arc, dmg: h.dmg, crit: h.crit, pen: d.pen || 0, aoe: (d.aoe || 0) * (1 + (m.blast || 0) + (m.bigball || 0)), slow: d.slow || 0, slowTime: d.slowTime || 0, knock: d.knock || 0, stall: m.stall || 0, balloon, letter });
+    G.shots.push({ kind: d.shot, from: a, x0, y0, x: x0, y: y0, tx: tgt.x, ty: hitY(tgt), target: tgt, t: -(delay || 0), dur, arc, dmg: h.dmg, crit: h.crit, pen: d.pen || 0, aoe: (d.aoe || 0) * (1 + (m.blast || 0) + (m.bigball || 0)), slow: d.slow || 0, slowTime: d.slowTime || 0, knock: d.knock || 0, stall: m.stall || 0, balloon, letter, farQ: a.kind === 'sniper' ? a.farQ || 0 : 0 });
     Sound.play(snipe ? 'snipe' : d.shot === 'bomb' ? 'toss' : fast ? 'pop' : 'shoot');
     // 固有能力 三連発（花火師）: every 5th bomb also sends up three small fireworks further ahead
     if (a.kind === 'pyro' && !delay) {
@@ -2432,8 +2432,10 @@
       } else if (s.kind === 'snipe') {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         const gr = ctx.createLinearGradient(s.x0, s.y0, s.x, s.y); gr.addColorStop(0, 'rgba(255,230,170,0)'); gr.addColorStop(1, 'rgba(255,240,200,.95)');
-        ctx.strokeStyle = gr; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(s.x0, s.y0); ctx.lineTo(s.x, s.y); ctx.stroke();
-        ctx.fillStyle = '#fff6e0'; Art.circ(ctx, s.x, s.y, 3); ctx.fill();
+        const fq = s.farQ || 0;   // 遠くの景色: the farther the target, the thicker and brighter the light
+        ctx.strokeStyle = gr; ctx.lineWidth = 2.5 + fq * 3; ctx.beginPath(); ctx.moveTo(s.x0, s.y0); ctx.lineTo(s.x, s.y); ctx.stroke();
+        if (fq > 0.05) Art.glow(ctx, s.x, s.y, 10 + fq * 18, 'rgba(255,225,150,A)', 0.4 + fq * 0.5);
+        ctx.fillStyle = '#fff6e0'; Art.circ(ctx, s.x, s.y, 3 + fq * 2); ctx.fill();
         ctx.restore();
       } else if (s.kind === 'ball') {
         // 最後の打者: a hit-back ball
