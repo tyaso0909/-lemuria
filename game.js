@@ -767,7 +767,7 @@
       if (u.fly && killer && killer.kind === 'hunter') {
         const I = INNATE.hunter;
         if (G.huntW !== G.wave) { G.huntW = G.wave; G.huntN = 0; }
-        if (G.huntN < I.perWave) { G.huntN++; G.energy = Math.min(CONFIG.energyMax, G.energy + I.energy); G.texts.push({ x: killer.x, y: killer.y - 92, v: '+' + I.energy + ' エネルギー', life: 1.2, heal: true }); }
+        if (G.huntN < I.perWave) { G.huntN++; killer.pageN = (killer.pageN || 0) + 1; G.energy = Math.min(CONFIG.energyMax, G.energy + I.energy); G.texts.push({ x: killer.x, y: killer.y - 92, v: '+' + I.energy + ' エネルギー', life: 1.2, heal: true }); }
       }
       // 固有能力 かき氷のしぶき（氷の魔法使い）: an enemy slowed by ice bursts into cold when it falls
       if (u.iceT > G.time && G.allies.some((o) => !o.dead && o.kind === 'icemage')) {
