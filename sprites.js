@@ -8,7 +8,7 @@
   const walking = (u) => { const t = u.anim || 0; if (u.walk) u.sprWalkT = t; return u.sprWalkT != null && t - u.sprWalkT < 0.2; };
 
   // 剣士（2026-10-27 ユーザー提供のコマ絵 3枚：待機・歩き／攻撃／固有能力「一歩前へ」）
-  //   idle1〜4: 待機（4がずり落ちたバケツを直す）、walk1〜16: 歩き（2026-10-29 ユーザー提供の16コマ。idle5〜8 は使わない）
+  //   idle1〜4: 待機、idle5〜8: 歩き、walk1〜16: 2026-10-29 提供の16コマの歩き（今は使っていない）
   //   atk1〜4: 振りかぶり、atk5〜8: 振り下ろし→戻り、skill1〜8: 5回目の一撃（ページが舞う）
   const SWORD_SKILL_EVERY = 5;           // 固有能力の5回目（game.js の INNATE.swordsman.every と同じ）
   const SWORD_IDLE = ['idle1', 'idle2', 'idle3', 'idle4', 'idle1', 'idle1', 'idle1', 'idle1'];   // 待機の並び（1秒に4コマ）
@@ -31,7 +31,7 @@
         if (u.cool > 0 && u.cool <= W) return (skill ? 'skill' : 'atk') + Math.min(4, 1 + Math.floor((1 - u.cool / W) * 4));
         return skill ? 'skill1' : 'atk1';      // 構え（次が5回目なら剣が光っている）
       }
-      if (mv) return 'walk' + (1 + Math.floor(t * 16) % 16);   // 歩き（2026-10-29 追加の16コマ）
+      if (mv) return 'idle' + (5 + Math.floor(t * 4) % 4);    // 歩き（2026-10-29 ユーザーがコマ選び帳で指定）: #5→#6→#7→#8 を1秒に4コマ
       // 待機（2026-10-29 ユーザーがコマ選び帳で指定）: #1→#2→#3→#4→#1→#1→#1→#1 を1秒に4コマ
       return SWORD_IDLE[Math.floor((t + (u.id || 0) * 0.37) * 4) % SWORD_IDLE.length];
     },
