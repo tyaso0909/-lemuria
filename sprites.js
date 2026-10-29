@@ -11,6 +11,7 @@
   //   idle1〜4: 待機（4がずり落ちたバケツを直す）、walk1〜16: 歩き（2026-10-29 ユーザー提供の16コマ。idle5〜8 は使わない）
   //   atk1〜4: 振りかぶり、atk5〜8: 振り下ろし→戻り、skill1〜8: 5回目の一撃（ページが舞う）
   const SWORD_SKILL_EVERY = 5;           // 固有能力の5回目（game.js の INNATE.swordsman.every と同じ）
+  const SWORD_IDLE = ['idle1', 'idle2', 'idle3', 'idle4', 'idle1', 'idle1', 'idle1', 'idle1'];   // 待機の並び（1秒に4コマ）
   const SWORD = {
     src: 'sprites/swordsman.webp',
     px: 2.5,
@@ -31,10 +32,8 @@
         return skill ? 'skill1' : 'atk1';      // 構え（次が5回目なら剣が光っている）
       }
       if (mv) return 'walk' + (1 + Math.floor(t * 16) % 16);   // 歩き（2026-10-29 追加の16コマ）
-      // 待機: ときどきバケツがずり落ちて、押し上げる
-      const ph = (t + (u.id || 0) * 1.37) % 7;
-      if (ph > 5.6) return 'idle' + [2, 2, 3, 3, 4, 4, 4][Math.min(6, Math.floor((ph - 5.6) / 0.2))];
-      return 'idle1';
+      // 待機（2026-10-29 ユーザーがコマ選び帳で指定）: #1→#2→#3→#4→#1→#1→#1→#1 を1秒に4コマ
+      return SWORD_IDLE[Math.floor((t + (u.id || 0) * 0.37) * 4) % SWORD_IDLE.length];
     },
   };
   Art.useSprite('swordsman', SWORD);
