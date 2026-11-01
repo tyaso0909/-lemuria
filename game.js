@@ -778,6 +778,7 @@
           e.slowT = Math.max(e.slowT || 0, I.t); e.iceT = Math.max(e.iceT || 0, G.time + I.t);
         }
         G.fx.push({ type: 'frost', x: u.x, y: u.y, life: 1, dur: 0.5, r: I.r });
+        for (const o of G.allies) if (!o.dead && o.kind === 'icemage') o.burstN = (o.burstN || 0) + 1;   // (sprite)
       }
       // 速達: a letter shot down is opened — the undelivered words reach the residents around it
       if (u.def.courier) {
@@ -1386,6 +1387,7 @@
     drainTo(a, dealt);
     // 固有能力 工夫を重ねる: the more enemies one bolt hit, the sooner the next one is loaded
     const I = INNATE.crossbow; a.cool *= 1 - Math.min(I.max, I.step * landed);
+    if (landed >= 2) a.xbN = (a.xbN || 0) + 1;   // (sprite: winds on another rubber band)
     const x0 = a.x + 16 * dir, y0 = a.y - 36, x1 = a.x + reach * dir;
     G.shots.push({ kind: 'quarrel', visual: true, from: a, x0, y0, x: x0, y: y0, tx: x1, ty: y0 + 4, target: null, t: 0, dur: Math.max(0.12, reach / 2200), arc: 0 });
     Sound.play('snipe');
@@ -1393,6 +1395,7 @@
 
   // the turret goes up a little behind the current front line (or mid-lane when there is none); 予備の部品 may add a second
   function placeTurret(a) {
+    a.builtN = (a.builtN || 0) + 1;   // (sprite: plays the build)
     const front = G.allies.reduce((mx, o) => !o.dead && o.def.melee && !o.away ? Math.max(mx, o.x) : mx, 0);
     const tx = clamp(front > 0 ? front - 70 : 560, LANE.allySpawn + 80, LANE.engageMaxX - 60);
     if (summonRoom() > 0) G.allies.push(makeSummon('turret', a, tx));
@@ -1415,10 +1418,11 @@
   // 人形遣い: calls 眠り人形 in front of itself every few seconds (up to dolls.max of its own at once)
   function updateDollmaster(a, A, E, frontAlly, dt) {
     const d = a.def, m = a.m || {};
+    if ((a.dollTick = (a.dollTick || 0) + 1) % 15 === 0) a.dollN = A.filter((o) => o.kind === 'doll' && o.owner === a.id && !o.dead).length;   // (sprite)
     a.summonT -= dt * (1 + (m.aspd || 0)) * (a.dazeT > 0 ? 0.5 : 1) * (a.sealT > 0 ? 0 : 1);
     if (a.summonT <= 0) {
       a.summonT = d.rate;
-      const mine = A.filter((o) => o.kind === 'doll' && o.owner === a.id).length;
+      const mine = A.filter((o) => o.kind === 'doll' && o.owner === a.id).length; a.dollN = mine;
       const room = Math.min(d.dolls.n, d.dolls.max - mine, summonRoom());
       for (let i = 0; i < room; i++) G.allies.push(makeSummon('doll', a, a.x + 24 + i * 14));
       if (room > 0) { a.atk = 1; Sound.play('summon'); }
@@ -1506,6 +1510,7 @@
     const enemyNear = E.some((e) => e.x - a.x < 170 && e.x - a.x > -30);
     if (tgt && a.cool <= 0) {
       const m = a.m || {}, base = Math.round(a.healV), amt = Math.round(a.healV * (tgt.hp / tgt.maxHp < INNATE.healer.below ? INNATE.healer.mul : 1)); // 固有能力 手のぬくもり（波紋には乗せない）
+      if (tgt.hp / tgt.maxHp < INNATE.healer.below) a.warmN = (a.warmN || 0) + 1;   // (sprite: kneels and reaches out)
       a.cool = a.rate; a.atk = 1;
       tgt.hp = Math.min(tgt.maxHp, tgt.hp + amt);
       G.fx.push({ type: 'heal', x: tgt.x, y: tgt.y, life: 1, dur: 0.7 });
