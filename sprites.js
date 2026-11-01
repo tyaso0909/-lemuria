@@ -42,6 +42,7 @@
   //   idle1〜4: 待機（3でまばたき）、idle5〜8: 歩き
   //   atk1: 構え、atk2〜5: 木づちを振りかぶって振る、atk6: 当たる、atk7〜8: 戻る
   //   skill1〜4: 盾を地面に据えて踏ん張る、skill5〜8: 守っている間（窓の明かりが強い）
+  const GUARD_IDLE = ['idle1', 'idle2', 'idle3', 'idle3', 'idle4'];   // 待機の並び（1秒に8コマ）
   const GUARD_WALK = ['walk1', 'walk4', 'walk6'];   // 歩きの並び（walk1〜16 は 2026-10-29 追加の16コマ）
   const GUARD_HALF_T = 2.5;              // かばう背中の長さ（game.js の INNATE.guardian.t と同じ）
   const GUARD = {
@@ -69,9 +70,8 @@
         return 'atk1';
       }
       if (mv) return GUARD_WALK[Math.floor(t * 8) % GUARD_WALK.length];   // 歩き（2026-10-29 ユーザーがコマ選び帳で指定）: #25→#28→#30 を1秒に8コマ
-      const ph = (t + (u.id || 0) * 1.37) % 4.5;
-      if (ph > 4.0) return 'idle' + [2, 3, 3, 4][Math.min(3, Math.floor((ph - 4.0) / 0.125))];
-      return 'idle1';
+      // 待機（2026-11-01 ユーザーがコマ選び帳で指定）: #1→#2→#3→#3→#4 を1秒に8コマ
+      return GUARD_IDLE[Math.floor((t + (u.id || 0) * 0.37) * 8) % GUARD_IDLE.length];
     },
     // 守っている間: 背中から暖かい光（窓の明かりの色）
     under(ctx, u, name) {
