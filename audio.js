@@ -84,5 +84,17 @@
 
   function setEnabled(v) { enabled = v; if (master) master.gain.value = v ? 0.8 : 0; }
 
-  window.Sound = { init, play: (k) => { if (ac && enabled && S[k]) S[k](); }, startMusic, stopMusic, setEnabled, get enabled() { return enabled; } };
+  // a sound file registered in the scenario editor (story/): decoded once, then played through the effects volume
+  const files = {};
+  function playFile(src) {
+    if (!ac || !enabled || !src) return;
+    const go = (buf) => { const n = ac.createBufferSource(); n.buffer = buf; n.connect(sfxBus); n.start(); };
+    if (files[src] && files[src] !== 'loading') { go(files[src]); return; }
+    if (files[src] === 'loading') return;
+    files[src] = 'loading';
+    fetch(src).then((r) => r.arrayBuffer()).then((b) => new Promise((ok, ng) => ac.decodeAudioData(b, ok, ng)))
+      .then((buf) => { files[src] = buf; go(buf); })
+      .catch(() => { delete files[src]; try { const a = new Audio(src); a.volume = 0.6; a.play().catch(() => {}); } catch (e) { /* ignore */ } });
+  }
+  window.Sound = { init, playFile, play: (k) => { if (ac && enabled && S[k]) S[k](); }, startMusic, stopMusic, setEnabled, get enabled() { return enabled; } };
 })();

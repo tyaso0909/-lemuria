@@ -11,7 +11,8 @@
 
   // ---------------------------------------------------------------- parse
   const BG_NAMES = { 灯台: 'tower', 海: 'sea', 工房: 'shop', 夜空: 'sky', 黒: 'black', 暗闇: 'black' };
-  const SFX = { 警報: 'boss', 鐘: 'bell', 召喚: 'summon', 決定: 'click', 波: 'wave' };
+  const SFX = { 警報: 'boss', 鐘: 'bell', 召喚: 'summon', 決定: 'click', 波: 'wave', 衝撃: 'slam', 爆発: 'blast', 打撃: 'hit', 魔法: 'magic', 回復: 'heal',
+    きらめき: 'reveal', ひらめき: 'epic', 勝利: 'win', 敗北: 'lose', 風: 'dash', 雷: 'zap', 歌: 'song', 時計: 'tick', 投げる: 'toss', はじける: 'pop' };
   // images registered in the scenario editor (story.js: window.STORY_IMAGES = { 名前: { kind: 'bg'|'char', src, who } })
   const IMG = window.STORY_IMAGES || {};
   const POS = ['左端', '左', '中央', '右', '右端'], POSX = { 左端: 13, 左: 28, 中央: 50, 右: 72, 右端: 87 };
@@ -36,7 +37,7 @@
         else if (key === '人物を消す') ch.lines.push({ t: 'charoff', pos: POS.includes(rest[0]) ? rest[0] : '全員' });
         else if (key === '暗転') ch.lines.push({ t: 'fade' });
         else if (key === '揺れ') ch.lines.push({ t: 'shake' });
-        else if (key === '音') { if (SFX[arg]) ch.lines.push({ t: 'sfx', name: SFX[arg] }); }
+        else if (key === '音') { if (SFX[arg]) ch.lines.push({ t: 'sfx', name: SFX[arg] }); else if (IMG[arg] && IMG[arg].kind === 'sfx') ch.lines.push({ t: 'sfx', src: IMG[arg].src }); }   // 登録した音のファイルも、その名前で鳴らせる
         else if (key === '待つ') ch.lines.push({ t: 'wait', sec: Math.min(10, parseFloat(arg.replace(/[^\d.]/g, '')) || 1) });
         else if (key === 'チュートリアル') ch.lines.push({ t: 'tutorial' });
         else if (key === '解放') { const n = parseInt(arg.replace(/[^\d]/g, ''), 10); if (n > 0) ch.unlock = n; }
@@ -164,7 +165,7 @@
       if (L.t === 'bg') { setBg(L.bg, L.src); continue; }
       if (L.t === 'char') { setChar(L.pos, L.src, L.who, L.flip); continue; }
       if (L.t === 'charoff') { clearChar(L.pos); continue; }
-      if (L.t === 'sfx') { try { Sound.play(L.name); } catch (e) { /* ignore */ } continue; }
+      if (L.t === 'sfx') { try { if (L.src) Sound.playFile(L.src); else Sound.play(L.name); } catch (e) { /* ignore */ } continue; }
       if (L.t === 'shake') { scr.classList.remove('shake'); void scr.offsetWidth; scr.classList.add('shake'); continue; }
       if (L.t === 'fade') { busy = true; fadeEl.classList.add('on'); setTimeout(() => { fadeEl.classList.remove('on'); busy = false; next(); }, 650); return; }
       if (L.t === 'wait') { show('', '', false); waitUntil = performance.now() + L.sec * 1000; return; }
