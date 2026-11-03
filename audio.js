@@ -1,7 +1,7 @@
 /* 夢の境界線 — audio.js : WebAudioで合成する仮の効果音とオルゴール風BGM */
 (function () {
   'use strict';
-  let ac = null, master = null, sfxBus = null, musicBus = null, enabled = true, musicTimer = null, musicStep = 0;
+  let ac = null, master = null, sfxBus = null, musicBus = null, storyBus = null, fileBus = null, enabled = true, musicTimer = null, musicStep = 0;
 
   function init() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
@@ -10,6 +10,8 @@
       master = ac.createGain(); master.gain.value = enabled ? 0.8 : 0; master.connect(ac.destination);
       sfxBus = ac.createGain(); sfxBus.gain.value = 0.55; sfxBus.connect(master);
       musicBus = ac.createGain(); musicBus.gain.value = 0.16; musicBus.connect(master);
+      storyBus = ac.createGain(); storyBus.gain.value = 0.24; storyBus.connect(master);   // ストーリーのBGM（合成の曲）
+      fileBus = ac.createGain(); fileBus.gain.value = 0.6; fileBus.connect(master);       // ストーリーのBGM（登録した曲のファイル）
     } catch (e) { ac = null; }
   }
   function tone(freq, dur, type, vol, when, bus, slideTo) {
@@ -23,14 +25,14 @@
     o.connect(g); g.connect(bus || sfxBus); o.start(t); o.stop(t + dur + 0.05);
   }
   let noiseBuf = null;
-  function noise(dur, vol, freq, when) {
+  function noise(dur, vol, freq, when, bus) {
     if (!ac) return;
     if (!noiseBuf) { noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
     const t = ac.currentTime + (when || 0);
     const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
     s.buffer = noiseBuf; f.type = 'bandpass'; f.frequency.value = freq || 1200; f.Q.value = 0.8;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(sfxBus); s.start(t); s.stop(t + dur + 0.02);
+    s.connect(f); f.connect(g); g.connect(bus || sfxBus); s.start(t); s.stop(t + dur + 0.02);
   }
   // rate-limit frequent sounds
   const last = {};
@@ -86,15 +88,85 @@
 
   // a sound file registered in the scenario editor (story/): decoded once, then played through the effects volume
   const files = {};
+  function loadFile(src) {
+    if (!files[src]) files[src] = fetch(src).then((r) => { if (!r.ok) throw new Error('http'); return r.arrayBuffer(); })
+      .then((b) => new Promise((ok, ng) => ac.decodeAudioData(b, ok, ng))).catch((e) => { delete files[src]; throw e; });
+    return files[src];
+  }
   function playFile(src) {
     if (!ac || !enabled || !src) return;
-    const go = (buf) => { const n = ac.createBufferSource(); n.buffer = buf; n.connect(sfxBus); n.start(); };
-    if (files[src] && files[src] !== 'loading') { go(files[src]); return; }
-    if (files[src] === 'loading') return;
-    files[src] = 'loading';
-    fetch(src).then((r) => r.arrayBuffer()).then((b) => new Promise((ok, ng) => ac.decodeAudioData(b, ok, ng)))
-      .then((buf) => { files[src] = buf; go(buf); })
-      .catch(() => { delete files[src]; try { const a = new Audio(src); a.volume = 0.6; a.play().catch(() => {}); } catch (e) { /* ignore */ } });
+    loadFile(src).then((buf) => { const n = ac.createBufferSource(); n.buffer = buf; n.connect(sfxBus); n.start(); })
+      .catch(() => { try { const a = new Audio(src); a.volume = 0.6; a.play().catch(() => {}); } catch (e) { /* ignore */ } });
   }
-  window.Sound = { init, playFile, play: (k) => { if (ac && enabled && S[k]) S[k](); }, startMusic, stopMusic, setEnabled, get enabled() { return enabled; } };
+
+  // ---- ストーリーのBGM（シナリオの [BGM 名前]）: built-in tracks are generated; registered files loop
+  // mel / bass: MIDI notes (0 = rest). ms: one step. bassEvery: a bass note every N steps
+  const BGM = {
+    box: { ms: 460, mel: MEL0(), bass: [45, 45, 41, 41, 43, 43, 40, 40], bassEvery: 2, wave: 'sine', vol: 0.22, len: 1.2, bwave: 'triangle', bvol: 0.18, blen: 2.2, thin: 0.5 },
+    sea: { ms: 720, mel: [62, 0, 65, 69, 0, 67, 65, 0, 62, 0, 60, 62, 0, 65, 64, 0], bass: [38, 38, 41, 36], bassEvery: 4, wave: 'sine', vol: 0.2, len: 2.2, bwave: 'sine', bvol: 0.2, blen: 3.6,
+      extra(i, g) { if (i % 8 === 0) noise(2.4, 0.05, 420, 0, g); } },
+    shop: { ms: 380, mel: [65, 69, 72, 74, 72, 69, 67, 0, 64, 65, 69, 72, 74, 77, 74, 0], bass: [41, 41, 48, 48, 46, 46, 43, 43], bassEvery: 2, wave: 'triangle', vol: 0.16, len: 0.9, bwave: 'triangle', bvol: 0.16, blen: 1.4, thin: 0.6 },
+    dread: { ms: 900, mel: [57, 58, 0, 0, 60, 59, 0, 0, 57, 0, 63, 62, 0, 0, 58, 0], bass: [33, 33, 32, 32], bassEvery: 4, wave: 'triangle', vol: 0.14, len: 2.4, bwave: 'sawtooth', bvol: 0.05, blen: 3.8 },
+    battle: { ms: 230, mel: [69, 72, 76, 72, 69, 72, 76, 79, 77, 76, 74, 72, 71, 72, 74, 76], bass: [45, 45, 45, 45, 41, 41, 43, 43], bassEvery: 2, wave: 'square', vol: 0.05, len: 0.3, bwave: 'triangle', bvol: 0.24, blen: 0.5,
+      extra(i, g) { if (i % 4 === 0) noise(0.06, 0.08, 180, 0, g); } },
+    memory: { ms: 520, mel: [72, 76, 79, 84, 79, 76, 74, 77, 81, 86, 81, 77, 72, 76, 79, 83], bass: [48, 53, 55, 48], bassEvery: 4, wave: 'sine', vol: 0.15, len: 1.6, bwave: 'sine', bvol: 0.14, blen: 3 },
+  };
+  function MEL0() { return [76, 79, 81, 84, 81, 79, 76, 74, 72, 74, 76, 79, 76, 74, 72, 69]; }
+  function trackTick(T, p) {
+    if (p.stopped) return;
+    const i = p.step++, m = T.mel[i % T.mel.length];
+    if (m && !(T.thin && i % 4 === 3 && Math.random() > T.thin)) tone(midi(m), T.len, T.wave, T.vol, 0, p.g);
+    if (i % T.bassEvery === 0) { const b = T.bass[Math.floor(i / T.bassEvery) % T.bass.length]; if (b) tone(midi(b), T.blen, T.bwave, T.bvol, 0, p.g); }
+    if (T.extra) T.extra(i, p.g);
+  }
+  // how often a built-in effect repeats when it is set to くり返す (seconds)
+  const LOOPGAP = { tick: 0.5, wave: 3.2, song: 1.1, bell: 2.6, zap: 1.6, dash: 1.8, pop: 0.7, hit: 0.6, heal: 1.4, magic: 1.4 };
+  // one playing thing (a BGM or a repeating effect) with its own fader
+  function startPlayer(spec, music, fadeIn) {
+    const g = ac.createGain(), t = ac.currentTime, f = Math.max(0.02, fadeIn || 0.02);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1, t + f);
+    g.connect(music ? (spec.src ? fileBus : storyBus) : sfxBus);
+    const p = { g, step: 0, stopped: false, timer: 0, node: null, el: null };
+    if (spec.src) {
+      loadFile(spec.src).then((buf) => {
+        if (p.stopped) return;
+        const n = ac.createBufferSource(); n.buffer = buf; n.loop = true; n.connect(g); n.start(); p.node = n;
+      }).catch(() => {
+        if (p.stopped) return;
+        try { const a = new Audio(spec.src); a.loop = true; a.volume = music ? 0.6 : 0.55; a.play().catch(() => {}); p.el = a; } catch (e) { /* ignore */ }
+      });
+    } else if (music) {
+      const T = BGM[spec.name] || BGM.box;
+      trackTick(T, p); p.timer = setInterval(() => trackTick(T, p), T.ms);
+    } else if (S[spec.name]) {
+      const k = spec.name; S[k](); p.timer = setInterval(() => { if (!p.stopped && enabled) S[k](); }, (LOOPGAP[k] || 1.5) * 1000);
+    }
+    return p;
+  }
+  function stopPlayer(p, fade) {
+    if (!p || p.stopped) return; p.stopped = true;
+    const f = Math.max(0.02, fade == null ? 1 : fade), t = ac.currentTime;
+    try { p.g.gain.cancelScheduledValues(t); p.g.gain.setValueAtTime(Math.max(0.0001, p.g.gain.value), t); p.g.gain.exponentialRampToValueAtTime(0.0001, t + f); } catch (e) { /* ignore */ }
+    if (p.el) { const a = p.el, v0 = a.volume, t0 = performance.now(); const fd = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / (f * 1000)); a.volume = v0 * (1 - k); if (k >= 1) { clearInterval(fd); a.pause(); } }, 50); }
+    setTimeout(() => { clearInterval(p.timer); try { if (p.node) p.node.stop(); } catch (e) { /* ignore */ } try { p.g.disconnect(); } catch (e) { /* ignore */ } }, f * 1000 + 80);
+  }
+  const keyOf = (spec) => spec ? (spec.src ? 'f:' + spec.src : 'b:' + spec.name) : '';
+  let bgmNow = null, bgmKey = '';
+  // bgm({ name: 'sea' }) / bgm({ src: 'story/曲.mp3' }) / bgm(null) で止める。同じ曲なら流したまま
+  function bgm(spec, fade) {
+    if (!ac) return;
+    const k = keyOf(spec); if (k === bgmKey && bgmNow && !bgmNow.stopped) return;
+    if (bgmNow) stopPlayer(bgmNow, fade == null ? 1.2 : fade);
+    bgmNow = null; bgmKey = k;
+    if (spec) bgmNow = startPlayer(spec, true, fade == null ? 1.2 : fade);
+  }
+  // repeating effects (シナリオの [音 名前 くり返し] … [音を止める 名前])
+  const loops = {};
+  function loopStart(id, spec) { if (!ac || !spec) return; if (loops[id]) stopPlayer(loops[id], 0.3); loops[id] = startPlayer(spec, false, 0.3); }
+  function loopStop(id, fade) {
+    for (const k of id == null ? Object.keys(loops) : [id]) if (loops[k]) { stopPlayer(loops[k], fade == null ? 0.6 : fade); delete loops[k]; }
+  }
+  function storyStop(fade) { bgm(null, fade); loopStop(null, fade); }
+
+  window.Sound = { init, playFile, bgm, loopStart, loopStop, storyStop, BGM_NAMES: Object.keys(BGM), play: (k) => { if (ac && enabled && S[k]) S[k](); }, startMusic, stopMusic, setEnabled, get enabled() { return enabled; } };
 })();

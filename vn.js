@@ -13,6 +13,9 @@
   const BG_NAMES = { 灯台: 'tower', 海: 'sea', 工房: 'shop', 夜空: 'sky', 黒: 'black', 暗闇: 'black' };
   const SFX = { 警報: 'boss', 鐘: 'bell', 召喚: 'summon', 決定: 'click', 波: 'wave', 衝撃: 'slam', 爆発: 'blast', 打撃: 'hit', 魔法: 'magic', 回復: 'heal',
     きらめき: 'reveal', ひらめき: 'epic', 勝利: 'win', 敗北: 'lose', 風: 'dash', 雷: 'zap', 歌: 'song', 時計: 'tick', 投げる: 'toss', はじける: 'pop' };
+  // story BGM (audio.js の Sound.bgm): 名前 → 曲
+  const BGMK = { オルゴール: 'box', 夜の海: 'sea', 工房: 'shop', 不穏: 'dread', 戦い: 'battle', 思い出: 'memory' };
+  const STOPW = ['止める', '停止', 'なし', '消す'];
   // images registered in the scenario editor (story.js: window.STORY_IMAGES = { 名前: { kind: 'bg'|'char', src, who } })
   const IMG = window.STORY_IMAGES || {};
   const POS = ['左端', '左', '中央', '右', '右端'], POSX = { 左端: 13, 左: 28, 中央: 50, 右: 72, 右端: 87 };
@@ -37,7 +40,16 @@
         else if (key === '人物を消す') ch.lines.push({ t: 'charoff', pos: POS.includes(rest[0]) ? rest[0] : '全員' });
         else if (key === '暗転') ch.lines.push({ t: 'fade' });
         else if (key === '揺れ') ch.lines.push({ t: 'shake' });
-        else if (key === '音') { if (SFX[arg]) ch.lines.push({ t: 'sfx', name: SFX[arg] }); else if (IMG[arg] && IMG[arg].kind === 'sfx') ch.lines.push({ t: 'sfx', src: IMG[arg].src }); }   // 登録した音のファイルも、その名前で鳴らせる
+        else if (key === '音') {   // [音 名前] 1回 / [音 名前 くり返し] 止めるまでくり返す。登録した音のファイルも、その名前で鳴らせる
+          const loop = rest.length > 1 && /^(くり返し|繰り返し|ループ)$/.test(rest[rest.length - 1]), nm = loop ? rest.slice(0, -1).join(' ') : arg;
+          const sp = SFX[nm] ? { name: SFX[nm] } : IMG[nm] && /^(sfx|bgm)$/.test(IMG[nm].kind) ? { src: IMG[nm].src } : null;
+          if (sp) ch.lines.push(loop ? { t: 'loop', id: nm, spec: sp } : Object.assign({ t: 'sfx' }, sp));
+        }
+        else if (key === '音を止める') ch.lines.push({ t: 'loopstop', id: arg || null });
+        else if (/^(BGM|ＢＧＭ|bgm)$/.test(key)) {   // [BGM 夜の海] ここから流す（別の曲を書くと切りかわる）／[BGM 止める]
+          if (!arg || STOPW.includes(arg)) ch.lines.push({ t: 'bgm', spec: null });
+          else { const sp = BGMK[arg] ? { name: BGMK[arg] } : IMG[arg] && /^(bgm|sfx)$/.test(IMG[arg].kind) ? { src: IMG[arg].src } : null; if (sp) ch.lines.push({ t: 'bgm', spec: sp }); }
+        }
         else if (key === '待つ') ch.lines.push({ t: 'wait', sec: Math.min(10, parseFloat(arg.replace(/[^\d.]/g, '')) || 1) });
         else if (key === 'チュートリアル') ch.lines.push({ t: 'tutorial' });
         else if (key === '解放') { const n = parseInt(arg.replace(/[^\d]/g, ''), 10); if (n > 0) ch.unlock = n; }
@@ -145,6 +157,7 @@
   const CPS = 42; // characters per second
   function play(chapter, o) {
     cur = chapter; idx = 0; opts = o || {}; open = true; busy = false; speaker = '';
+    sBgm = null; for (const k in sLoops) delete sLoops[k];
     logList.innerHTML = ''; logEl.hidden = true; autoOn = false; $('vnAutoBtn').classList.remove('on');
     $('vnChap').textContent = chapter.title; setBg('black'); charsEl.innerHTML = ''; fadeEl.classList.remove('on');
     nameEl.textContent = ''; textEl.textContent = ''; box.classList.remove('done');
@@ -152,12 +165,30 @@
     if (!raf) { t0 = performance.now(); raf = requestAnimationFrame(tick); }
     next();
   }
-  function resume() { scr.hidden = false; open = true; busy = false; if (!raf) { t0 = performance.now(); raf = requestAnimationFrame(tick); } next(); }
+  function resume() { scr.hidden = false; open = true; busy = false; if (!raf) { t0 = performance.now(); raf = requestAnimationFrame(tick); } soundSync(); next(); }
   function close(done) {
-    open = false; scr.hidden = true; scr.classList.remove('shake');
+    open = false; scr.hidden = true; scr.classList.remove('shake'); soundEnd(1.2);
     const cb = opts.onDone; opts = {}; cur = null;
     if (done && cb) cb();
   }
+  // the story's own BGM and repeating sounds (they end with the chapter)
+  let sBgm = null; const sLoops = {};
+  function soundCmd(L, live) {
+    if (L.t === 'bgm') sBgm = L.spec;
+    if (L.t === 'loop') sLoops[L.id] = L.spec;
+    if (L.t === 'loopstop') { if (L.id) delete sLoops[L.id]; else for (const k in sLoops) delete sLoops[k]; }
+    if (!live) return;
+    try {
+      if (L.t === 'bgm') Sound.bgm(L.spec);
+      if (L.t === 'loop') Sound.loopStart(L.id, L.spec);
+      if (L.t === 'loopstop') Sound.loopStop(L.id);
+    } catch (e) { /* no sound */ }
+  }
+  // play what should be sounding now (after skipping ahead, or coming back from the tutorial)
+  function soundSync() {
+    try { Sound.bgm(sBgm); Sound.loopStop(null, 0.2); for (const k in sLoops) Sound.loopStart(k, sLoops[k]); } catch (e) { /* no sound */ }
+  }
+  function soundEnd(fade) { sBgm = null; for (const k in sLoops) delete sLoops[k]; try { Sound.storyStop(fade); } catch (e) { /* no sound */ } }
   function next() {
     if (!cur || busy) return;
     while (idx < cur.lines.length) {
@@ -166,11 +197,12 @@
       if (L.t === 'char') { setChar(L.pos, L.src, L.who, L.flip); continue; }
       if (L.t === 'charoff') { clearChar(L.pos); continue; }
       if (L.t === 'sfx') { try { if (L.src) Sound.playFile(L.src); else Sound.play(L.name); } catch (e) { /* ignore */ } continue; }
+      if (L.t === 'bgm' || L.t === 'loop' || L.t === 'loopstop') { soundCmd(L, true); continue; }
       if (L.t === 'shake') { scr.classList.remove('shake'); void scr.offsetWidth; scr.classList.add('shake'); continue; }
       if (L.t === 'fade') { busy = true; fadeEl.classList.add('on'); setTimeout(() => { fadeEl.classList.remove('on'); busy = false; next(); }, 650); return; }
       if (L.t === 'wait') { show('', '', false); waitUntil = performance.now() + L.sec * 1000; return; }
       if (L.t === 'tutorial') {
-        if (opts.first && opts.onTutorial) { scr.hidden = true; open = false; opts.onTutorial(resume); return; }
+        if (opts.first && opts.onTutorial) { scr.hidden = true; open = false; try { Sound.storyStop(0.5); } catch (e) { /* no sound */ } opts.onTutorial(resume); return; }
         continue; // (in ふりかえり the battle is skipped)
       }
       show(L.t === 'say' ? L.name : '', L.text, L.t === 'narr', L.inner, L.label);
@@ -208,7 +240,7 @@
   function skip() {
     if (!cur) return;
     // the first time through, the tutorial marker is not skipped (it is the first battle)
-    if (opts.first) { const ti = cur.lines.findIndex((L, i) => i >= idx && L.t === 'tutorial'); if (ti >= 0) { idx = ti; full = ''; shown = 0; next(); return; } }
+    if (opts.first) { const ti = cur.lines.findIndex((L, i) => i >= idx && L.t === 'tutorial'); if (ti >= 0) { for (let j = idx; j < ti; j++) soundCmd(cur.lines[j], false); soundSync(); idx = ti; full = ''; shown = 0; next(); return; } }
     idx = cur.lines.length; full = ''; next();
   }
   scr.addEventListener('click', (e) => { if (e.target.closest('.vn-bar') || e.target.closest('.vn-log')) return; advance(); });
