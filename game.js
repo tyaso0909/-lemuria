@@ -1071,7 +1071,7 @@
         if (healed) { G.fx.push({ type: 'mend', x: e.x, y: e.y, life: 1, dur: 0.8, r: d.mend.r }); e.mendN = (e.mendN || 0) + 1; } // mendN: 見た目だけ（コマ絵の灯す動き）
       }
       if (d.ring && e.timer <= 0 && tgt && best <= d.ring.trigger) {
-        e.timer = d.ring.every; e.atk = 1;
+        e.timer = d.ring.every; e.atk = 1; e.ringN = (e.ringN || 0) + 1; // ringN/spawnN: 見た目だけ（コマ絵）
         for (const a of A) if (Math.abs(a.x - e.x) <= d.ring.r) a.dazeT = Math.max(a.dazeT || 0, d.ring.daze);
         for (const k of DECK) G.cd[k] = Math.min(G.cd[k] + d.ring.cdAdd, Math.max(G.cd[k], G.cdMax[k])); // FIX-F
         G.fx.push({ type: 'ring', x: e.x, y: e.y, life: 1, dur: 0.9, r: d.ring.r });
@@ -1079,7 +1079,7 @@
         Sound.play('bell');
       }
       if (d.spawn && e.timer <= 0) {
-        e.timer = d.spawn.every; e.atk = 1;
+        e.timer = d.spawn.every; e.atk = 1; e.spawnN = (e.spawnN || 0) + 1;
         const kids = E0.filter((o) => o.parent === e.id && !o.dead).length; // FIX-G
         const room = CONFIG.maxLive ? Math.max(0, CONFIG.maxLive - E0.length) : 99;
         for (let i = 0; i < Math.min(d.spawn.n, (d.spawn.max || 6) - kids, room); i++) { const s = makeEnemy(d.spawn.kind, G.wave); s.parent = e.id; s.x = e.x - 18 - i * 14; s.y = clamp(e.y + rand(-10, 10), LANE.yMin, LANE.yMax); G.enemies.push(s); }
@@ -2336,7 +2336,7 @@
     const all = G.allies.concat(G.enemies).sort((a, b2) => a.y - b2.y);
     Art.drawCommander(ctx, LANE.commanderX, LANE.commanderY, realT, G.cast);
     for (const u of all) {
-      const pop = u.dead && u.popped && u.kind === 'bomber'; // はじける泡夢の自爆：コマ絵の爆発をその場で見せる
+      const pop = u.dead && u.popped && (u.kind === 'bomber' || u.kind === 'express'); // はじける泡夢の自爆・速達の配達：コマ絵の爆発をその場で見せる
       const alpha = pop ? 1 : u.dead ? Math.max(0, 1 - u.dead / (u.boss ? 1.6 : 0.6)) : 1;
       const lift = u.dead && !pop ? u.dead * 30 : 0;
       // flyers glide FLY_H above the lane with a soft bob; their shadow stays on the ground
