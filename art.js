@@ -7712,5 +7712,6 @@
     el.src = url; images[kind] = rec;
   }
 
-  window.Art = { SIZE, KINDS, drawBackground, drawLighthouse, drawCommander, drawUnit, drawCardArt, drawSummonCircle, drawTelegraph, useImage, useSprite, LH, glow, circ, ell, rr };
+  const hasSprite = (k) => !!(SPRITES[k] && SPRITES[k].ready);
+  window.Art = { hasSprite, SIZE, KINDS, drawBackground, drawLighthouse, drawCommander, drawUnit, drawCardArt, drawSummonCircle, drawTelegraph, useImage, useSprite, LH, glow, circ, ell, rr };
 })();

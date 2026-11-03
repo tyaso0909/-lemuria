@@ -1742,7 +1742,7 @@
           e.warping = true;
           addHazard({ x: t.x, r: 50, dur: 0.7, dmg: e.atkV * d.warp.mul, from: e, tower: false, then: () => {
             G.fx.push({ type: 'smoke', x: e.x, y: e.y, life: 1, dur: 0.6 });
-            e.x = Math.max(LANE.front + 50, t.x - 46); e.atk = 1; e.revealT = d.tap.show; e.warping = false; e.cool = d.rate;
+            e.x = Math.max(LANE.front + 50, t.x - 46); e.atk = 1; e.revealT = d.tap.show; e.warping = false; e.cool = d.rate; e.warpN = (e.warpN || 0) + 1; // 見た目だけ（コマ絵の後衛奇襲）
             G.fx.push({ type: 'smoke', x: e.x, y: e.y, life: 1, dur: 0.6 });
             G.texts.push({ x: e.x, y: e.y - 190, v: 'みつけた', life: 1.2, skill: true });
           } });
@@ -2352,7 +2352,7 @@
       // (a kind without its own sprite yet falls back to a stand-in so the game never breaks)
       const want = u.toyT > 0 ? 'toy' : u.kind; // 異端の魔女のおもちゃの魔法: the resident is drawn as a little toy
       const dk = Art.KINDS.includes(want) ? want : u.toyT > 0 ? 'doll' : u.boss ? 'boss' : 'shade';
-      Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1) * growView(u), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });
+      Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : u.kind === 'friend' && Art.hasSprite && Art.hasSprite('friend') ? alpha * (0.3 + 0.7 * Math.max(0, Math.min(1, u.reveal || 0))) : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1) * growView(u), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });
       // 灯を喰らうもの: a translucent ghost of the boss whose memory it wears
       if (u.form && !u.dead && Art.KINDS.includes(u.form)) Art.drawUnit(ctx, u.form, u.x - 40, uy - (ENEMIES[u.form].flying ? 40 : 0), -1, { anim: u.anim, walk: false, atk: 0, hurt: 0, wind: 0, phase: 2, hp: 1, maxHp: 1, reveal: 1, fly: !!ENEMIES[u.form].flying, stance: u.stance }, { alpha: alpha * 0.42, enemy: true, noShadow: true });
       // ハンターの印: a small amber diamond over a marked enemy
