@@ -2336,7 +2336,7 @@
     const all = G.allies.concat(G.enemies).sort((a, b2) => a.y - b2.y);
     Art.drawCommander(ctx, LANE.commanderX, LANE.commanderY, realT, G.cast);
     for (const u of all) {
-      const pop = u.dead && u.popped && (u.kind === 'bomber' || u.kind === 'express'); // はじける泡夢の自爆・速達の配達：コマ絵の爆発をその場で見せる
+      const pop = u.dead && (u.popped || u.kind === 'snowlet') && (u.kind === 'bomber' || u.kind === 'express' || u.kind === 'snowlet'); // はじける泡夢の自爆・速達の配達：コマ絵の爆発をその場で見せる
       const alpha = pop ? 1 : u.dead ? Math.max(0, 1 - u.dead / (u.boss ? 1.6 : 0.6)) : 1;
       const lift = u.dead && !pop ? u.dead * 30 : 0;
       // flyers glide FLY_H above the lane with a soft bob; their shadow stays on the ground
