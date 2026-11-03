@@ -42,6 +42,9 @@
       const text2 = (s) => s.replace(/\\n/g, '\n');
       let m = line.match(/^([^\s「」『』：:（）()]{1,12})([「『].*)$/);
       if (m) { ch.lines.push({ t: 'say', name: m[1], text: text2(m[2]) }); continue; }
+      // 心の声：名前（……）。かっこが丸くなり、文字が少し淡くなる
+      m = line.match(/^([^\s「」『』：:（）()]{1,12})([（(].*[）)])$/);   // （最後が丸かっこで閉じている行だけ。地の文の途中の（）は地の文のまま）
+      if (m) { ch.lines.push({ t: 'say', name: m[1], text: text2(m[2]).replace(/^\(/, '（').replace(/\)$/, '）'), inner: true }); continue; }
       m = line.match(/^([^\s「」『』：:（）()]{1,12})[：:]\s*(.+)$/);
       if (m) { ch.lines.push({ t: 'say', name: m[1], text: text2(m[2]) }); continue; }
       ch.lines.push({ t: 'narr', text: text2(line) });
@@ -162,16 +165,16 @@
         if (opts.first && opts.onTutorial) { scr.hidden = true; open = false; opts.onTutorial(resume); return; }
         continue; // (in ふりかえり the battle is skipped)
       }
-      show(L.t === 'say' ? L.name : '', L.text, L.t === 'narr');
+      show(L.t === 'say' ? L.name : '', L.text, L.t === 'narr', L.inner);
       return;
     }
     close(true);
   }
-  function show(name, text, narr) {
+  function show(name, text, narr, inner) {
     waitUntil = 0;
     nameEl.textContent = name || ''; nameEl.className = 'vn-name ' + nameClass(name || ''); focusSpeaker(name || '');
-    textEl.classList.toggle('narr', !!narr); full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
-    if (text) { const p = document.createElement('p'); p.className = narr ? 'narr' : nameClass(name || ''); p.innerHTML = (name ? `<b>${esc(name)}</b>` : '') + esc(text); logList.appendChild(p); }
+    textEl.classList.toggle('narr', !!narr); textEl.classList.toggle('inner', !!inner); full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
+    if (text) { const p = document.createElement('p'); p.className = (narr ? 'narr' : nameClass(name || '')) + (inner ? ' inner' : ''); p.innerHTML = (name ? `<b>${esc(name)}</b>` : '') + esc(text); logList.appendChild(p); }
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function stepText(t) {
