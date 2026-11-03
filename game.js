@@ -1798,7 +1798,7 @@
       return;
     }
     if (e.fly) {
-      if (timer(e, 'sats', dt, 5)) { e.T.sats = d.sats.every; bossSummon(e, 'flyer', d.sats.n, 20); }
+      if (timer(e, 'sats', dt, 5)) { e.T.sats = d.sats.every; bossSummon(e, 'flyer', d.sats.n, 20); e.satN = (e.satN || 0) + 1; /* 見た目だけ（コマ絵の衛星召喚） */ }
       if (e.x > d.hover) { e.x -= d.speed * dt; e.walk = true; } else e.walk = false;
       return;
     }
