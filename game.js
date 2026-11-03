@@ -1822,7 +1822,7 @@
       e.T.ride = e.phase === 2 ? d.ride.every2 : d.ride.every;
       const k = (e.T.n = (e.T.n || 0) + 1) % 3;
       if (k === 1) bossSummon(e, 'charger', 1, -50); else if (k === 2) bossSummon(e, 'swarm', 3, -50); else bossSummon(e, 'runner', 2, -50);
-      e.atk = 1;
+      e.atk = 1; e.rideN = (e.rideN || 0) + 1; // 見た目だけ（コマ絵の乗り手送り出し）
     }
     if (tickWind(e, dt)) return;
     const s = bossWalk(e, A, dt, d.anchor);
