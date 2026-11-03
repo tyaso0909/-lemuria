@@ -1068,7 +1068,7 @@
         e.timer = d.mend.every; e.atk = 1;
         let healed = false;
         for (const o of E0) if (!o.dead && !o.boss && o.hp < o.maxHp && Math.abs(o.x - e.x) <= d.mend.r && !(o.mendT > G.time)) { o.mendT = G.time + d.mend.every * 0.95; o.hp = Math.min(o.maxHp, o.hp + o.maxHp * d.mend.share); healed = true; } // FIX-E
-        if (healed) G.fx.push({ type: 'mend', x: e.x, y: e.y, life: 1, dur: 0.8, r: d.mend.r });
+        if (healed) { G.fx.push({ type: 'mend', x: e.x, y: e.y, life: 1, dur: 0.8, r: d.mend.r }); e.mendN = (e.mendN || 0) + 1; } // mendN: 見た目だけ（コマ絵の灯す動き）
       }
       if (d.ring && e.timer <= 0 && tgt && best <= d.ring.trigger) {
         e.timer = d.ring.every; e.atk = 1;
