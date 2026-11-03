@@ -178,7 +178,7 @@
   function show(name, text, narr, inner) {
     waitUntil = 0;
     nameEl.textContent = name || ''; nameEl.className = 'vn-name ' + nameClass(name || ''); focusSpeaker(name || '');
-    textEl.classList.toggle('narr', !!narr); textEl.classList.toggle('inner', !!inner); full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
+    textEl.classList.toggle('narr', !!narr); textEl.classList.toggle('inner', !!inner); textEl.classList.toggle('hang', !!name);   // 台詞の2行目からは「の後ろにそろえる full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
     if (text) { const p = document.createElement('p'); p.className = (narr ? 'narr' : nameClass(name || '')) + (inner ? ' inner' : ''); p.innerHTML = (name ? `<b>${esc(name)}</b>` : '') + esc(text); logList.appendChild(p); }
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
