@@ -1928,7 +1928,7 @@
     const d = e.def, Ab = d.absorb;
     if (bossPhase(e)) e.T.quake = 1.5;
     e.atkV = e.baseAtk * (1 + (e.powerV || 0)); e.power = (e.powerV || 0) / Ab.powMax; // power (0..1) drives the crown glow
-    if (timer(e, 'call', dt, 2)) { e.T.call = d.call.every; bossSummon(e, 'shade', e.phase === 2 ? d.call.n2 : d.call.n, 40); }
+    if (timer(e, 'call', dt, 2)) { e.T.call = d.call.every; bossSummon(e, 'shade', e.phase === 2 ? d.call.n2 : d.call.n, 40); e.callN = (e.callN || 0) + 1; /* 見た目だけ（コマ絵の臣下召喚） */ }
     const w = tickWind(e, dt);
     e.absorb = e.wind > 0 && e.windKind === 'absorb' ? e.wind : Math.max(0, e.absorb - dt * 2);
     if (w === 'absorb') {
