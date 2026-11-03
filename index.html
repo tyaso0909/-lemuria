@@ -566,9 +566,10 @@ html.rot .res { font-size: 20px; }
 .vn .vn-bgimg { position: absolute; inset: 0; background: #000 center / cover no-repeat; opacity: 0; transition: opacity .6s; }
 .vn .vn-bgimg.on { opacity: 1; }
 .vn .vn-chars { position: absolute; inset: 0; pointer-events: none; }
-.vn .vn-chars img { position: absolute; bottom: 0; height: 660px; max-width: 70%; object-fit: contain; object-position: bottom; transform: translateX(-50%); opacity: 0; transition: opacity .35s, filter .25s; }
+.vn .vn-chars img { position: absolute; bottom: 0; height: 660px; max-width: 46%; object-fit: contain; object-position: bottom; transform: translateX(-50%); opacity: 0; transition: opacity .35s, filter .25s; }
 .vn .vn-chars img.on { opacity: 1; }
 .vn .vn-chars img.dim { filter: brightness(.55); }
+.vn .vn-chars img.flip { transform: translateX(-50%) scaleX(-1); }
 .vn .vn-fade { background: #000; opacity: 0; pointer-events: none; transition: opacity .45s; }
 .vn .vn-fade.on { opacity: 1; }
 .vn.shake { animation: vnShake .45s linear; }

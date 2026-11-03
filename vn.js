@@ -14,7 +14,7 @@
   const SFX = { 警報: 'boss', 鐘: 'bell', 召喚: 'summon', 決定: 'click', 波: 'wave' };
   // images registered in the scenario editor (story.js: window.STORY_IMAGES = { 名前: { kind: 'bg'|'char', src, who } })
   const IMG = window.STORY_IMAGES || {};
-  const POS = ['左', '中央', '右'], POSX = { 左: 25, 中央: 50, 右: 75 };
+  const POS = ['左端', '左', '中央', '右', '右端'], POSX = { 左端: 13, 左: 28, 中央: 50, 右: 72, 右端: 87 };
   function parse(text) {
     const chapters = [];
     let ch = null;
@@ -29,7 +29,10 @@
       if (d) {
         const [key, ...rest] = d[1].split(/[\s　：:]+/); const arg = rest.join(' ');
         if (key === '背景') { if (BG_NAMES[arg]) ch.lines.push({ t: 'bg', bg: BG_NAMES[arg] }); else if (IMG[arg]) ch.lines.push({ t: 'bg', bg: 'img', src: IMG[arg].src }); }
-        else if (key === '人物') { const m = IMG[rest[0]]; if (m) ch.lines.push({ t: 'char', src: m.src, who: m.who || '', pos: POS.includes(rest[1]) ? rest[1] : '中央' }); }
+        else if (key === '人物') {   // [人物 画像の名前 位置 反転 話す人=名前]（位置・反転・話す人は省略できる）
+          const m = IMG[rest[0]], more = rest.slice(1), w = more.find((x) => /^話す人[=＝]/.test(x));
+          if (m) ch.lines.push({ t: 'char', src: m.src, who: w ? w.replace(/^話す人[=＝]/, '') : m.who || '', pos: more.find((x) => POS.includes(x)) || '中央', flip: more.includes('反転') });
+        }
         else if (key === '人物を消す') ch.lines.push({ t: 'charoff', pos: POS.includes(rest[0]) ? rest[0] : '全員' });
         else if (key === '暗転') ch.lines.push({ t: 'fade' });
         else if (key === '揺れ') ch.lines.push({ t: 'shake' });
@@ -120,15 +123,17 @@
     bg = name; photo.classList.toggle('on', name === 'tower');
     if (name === 'img' && src) { bgImg.style.backgroundImage = `url("${src}")`; bgImg.classList.add('on'); } else bgImg.classList.remove('on');
   }
-  function setChar(pos, src, who) {
+  let speaker = '';
+  function setChar(pos, src, who, flip) {
     let img = charsEl.querySelector(`img[data-pos="${pos}"]`);
     if (!img) { img = document.createElement('img'); img.alt = ''; img.dataset.pos = pos; img.style.left = POSX[pos] + '%'; charsEl.appendChild(img); }
-    img.dataset.who = who || ''; img.src = src; requestAnimationFrame(() => img.classList.add('on'));
+    img.dataset.who = who || ''; img.src = src; img.classList.toggle('flip', !!flip); focusSpeaker(speaker); requestAnimationFrame(() => img.classList.add('on'));
   }
   function clearChar(pos) { for (const img of charsEl.querySelectorAll('img')) if (pos === '全員' || img.dataset.pos === pos) { img.classList.remove('on'); setTimeout(() => img.remove(), 360); } }
   function focusSpeaker(name) {
-    const imgs = [...charsEl.querySelectorAll('img')], any = imgs.some((i) => i.dataset.who && i.dataset.who === name);
-    for (const i of imgs) i.classList.toggle('dim', !!name && any && i.dataset.who !== name);
+    // 話している人のキャラは明るいまま、ほかのキャラは少し暗くなる（地の文のときは全員明るい）
+    speaker = name || '';
+    for (const i of charsEl.querySelectorAll('img')) i.classList.toggle('dim', !!name && i.dataset.who !== name);
   }
 
   // ---------------------------------------------------------------- player
@@ -136,7 +141,7 @@
   let open = false, cur = null, idx = 0, opts = {}, shown = 0, full = '', lastT = 0, autoOn = false, autoAt = 0, waitUntil = 0, busy = false;
   const CPS = 42; // characters per second
   function play(chapter, o) {
-    cur = chapter; idx = 0; opts = o || {}; open = true; busy = false;
+    cur = chapter; idx = 0; opts = o || {}; open = true; busy = false; speaker = '';
     logList.innerHTML = ''; logEl.hidden = true; autoOn = false; $('vnAutoBtn').classList.remove('on');
     $('vnChap').textContent = chapter.title; setBg('black'); charsEl.innerHTML = ''; fadeEl.classList.remove('on');
     nameEl.textContent = ''; textEl.textContent = ''; box.classList.remove('done');
@@ -155,7 +160,7 @@
     while (idx < cur.lines.length) {
       const L = cur.lines[idx++];
       if (L.t === 'bg') { setBg(L.bg, L.src); continue; }
-      if (L.t === 'char') { setChar(L.pos, L.src, L.who); continue; }
+      if (L.t === 'char') { setChar(L.pos, L.src, L.who, L.flip); continue; }
       if (L.t === 'charoff') { clearChar(L.pos); continue; }
       if (L.t === 'sfx') { try { Sound.play(L.name); } catch (e) { /* ignore */ } continue; }
       if (L.t === 'shake') { scr.classList.remove('shake'); void scr.offsetWidth; scr.classList.add('shake'); continue; }
