@@ -2692,7 +2692,7 @@
     loadDeck(); if (builtDeck !== DECK.join()) buildCards();
     newGame(); hudLast = {};
     show(ui.title, false); show(ui.result, false); show(ui.pause, false); show(ui.hud, true);
-    show($('gachaScreen'), false); show($('recordScreen'), false);
+    for (const id of ['gachaScreen', 'recordScreen', 'teamScreen', 'shopScreen', 'replayScreen', 'memoryScreen']) show($(id), false);
     refreshCardAbilities(); refreshCardBless(); $('blessScreen').hidden = true;
     setSpeed(1);
   }
@@ -2705,7 +2705,8 @@
     G.scripted = true; G.wave = 1; G.prep = 0; G.energy = CONFIG.energyMax; G.tutStep = 0;
     ui.banner.classList.remove('show'); bannerTimer = 0;
     show(ui.title, false); show(ui.result, false); show(ui.pause, false); show(ui.hud, true);
-    for (const id of ['gachaScreen', 'recordScreen', 'teamScreen', 'shopScreen']) show($(id), false);
+    // ふりかえり画面から始めたときも、メニューの画面が上に残ってカードを押せなくならないよう全部閉じる
+    for (const id of ['gachaScreen', 'recordScreen', 'teamScreen', 'shopScreen', 'replayScreen', 'memoryScreen']) show($(id), false);
     refreshCardAbilities(); refreshCardBless(); $('blessScreen').hidden = true;
     setSpeed(1);
     return G;
