@@ -1988,11 +1988,11 @@
     const d = e.def, X = d.express, S = d.seal;
     bossPhase(e);
     if (timer(e, 'exp', dt, X.first)) {
-      e.T.exp = X.every;
+      e.T.exp = X.every; e.expN = (e.expN || 0) + 1; // expN/flockN: 見た目だけ（コマ絵）
       for (const s of bossSummon(e, 'express', e.phase === 2 ? X.n2 : X.n, -20)) s.atkV = e.baseAtk * X.hit;
       G.texts.push({ x: e.x, y: e.y - 220, v: '速達', life: 1.1, skill: true });
     }
-    if (e.phase === 2 && timer(e, 'flock', dt, 1)) { e.T.flock = d.flock.every; bossSummon(e, 'letter', d.flock.n, 0); }
+    if (e.phase === 2 && timer(e, 'flock', dt, 1)) { e.T.flock = d.flock.every; bossSummon(e, 'letter', d.flock.n, 0); e.flockN = (e.flockN || 0) + 1; }
     const w = tickWind(e, dt);
     if (w === 'seal') {
       const ts = A.filter((a) => Math.abs(a.x - e.x) <= S.reach).sort((p, q) => Math.abs(p.x - e.x) - Math.abs(q.x - e.x)).slice(0, S.n);
