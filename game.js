@@ -1699,13 +1699,13 @@
     const d = e.def;
     bossPhase(e);
     for (const th of [2 / 3, 1 / 3]) if (!e.T['split' + th] && e.hp < e.maxHp * th) {
-      e.T['split' + th] = 1; bossSummon(e, 'snowlet', d.split, -30);
+      e.T['split' + th] = 1; bossSummon(e, 'snowlet', d.split, -30); e.splitN = (e.splitN || 0) + 1;
       G.texts.push({ x: e.x, y: e.y - 200, v: '雪がこぼれた', life: 1.2, skill: true });
     }
     if (e.phase === 2 && timer(e, 'absorb', dt, d.absorb.every)) {
       e.T.absorb = d.absorb.every; let n = 0;
       for (const o of G.enemies) if (!o.dead && o.kind === 'snowlet' && Math.abs(o.x - e.x) <= d.absorb.r) { o.dead = 0.0001; o.hp = 0; o.popped = true; n++; G.fx.push({ type: 'frost', x: o.x, y: o.y, life: 1, dur: 0.6, r: 40 }); }
-      if (n) { const h = e.maxHp * d.absorb.heal * n; e.hp = Math.min(e.maxHp, e.hp + h); G.texts.push({ x: e.x, y: e.y - 220, v: '+' + Math.round(h), life: 1.2, heal: true }); }
+      if (n) { e.absorbN = (e.absorbN || 0) + 1; const h = e.maxHp * d.absorb.heal * n; e.hp = Math.min(e.maxHp, e.hp + h); G.texts.push({ x: e.x, y: e.y - 220, v: '+' + Math.round(h), life: 1.2, heal: true }); }
     }
     const w = tickWind(e, dt);
     if (w) return;
@@ -2234,7 +2234,7 @@
     if (e.phase === 1 && e.hp < e.maxHp * BOSS.phase2At) { e.phase = 2; e.chargeCd = BOSS.chargeFirst; showBanner(d.p2[0], d.p2[1], 1.8, true); Sound.play('boss'); }
     e.summonCd -= dt; e.chargeCd -= dt;
     if (e.summonCd <= 0 && e.dash <= 0 && e.wind <= 0) {
-      e.summonCd = e.phase === 2 ? BOSS.summonCd2 : BOSS.summonCd1;
+      e.summonCd = e.phase === 2 ? BOSS.summonCd2 : BOSS.summonCd1; e.summonN = (e.summonN || 0) + 1; // 見た目だけ（コマ絵の呼び出し）
       const room = CONFIG.maxLive ? Math.max(0, CONFIG.maxLive - alive(G.enemies).length) : 99;
       for (let i = 0; i < Math.min(room, e.phase === 2 ? BOSS.summon2 : BOSS.summon1); i++) { const s = makeEnemy('shade', G.wave); s.x = e.x + 40 + i * 22; G.enemies.push(s); }
       G.fx.push({ type: 'rift', x: e.x + 50, y: e.y, life: 1, dur: 0.9 });
