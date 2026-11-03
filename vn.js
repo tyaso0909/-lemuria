@@ -43,13 +43,15 @@
         continue;
       }
       const text2 = (s) => s.replace(/\\n/g, '\n');
-      let m = line.match(/^([^\s「」『』：:（）()]{1,12})([「『].*)$/);
-      if (m) { ch.lines.push({ t: 'say', name: m[1], text: text2(m[2]) }); continue; }
+      // 話す人[表示する名前]「台詞」… 話しているのはオルドでも、名前の欄には「？？？」と出せる
+      const who = (n) => { const a = n.match(/^(.+?)[\[［](.+?)[\]］]$/); return a ? { name: a[1], label: a[2] } : { name: n }; };
+      let m = line.match(/^([^\s「」『』：:（）()]{1,30})([「『].*)$/);
+      if (m) { ch.lines.push(Object.assign({ t: 'say', text: text2(m[2]) }, who(m[1]))); continue; }
       // 心の声：名前（……）。かっこが丸くなり、文字が少し淡くなる
-      m = line.match(/^([^\s「」『』：:（）()]{1,12})([（(].*[）)])$/);   // （最後が丸かっこで閉じている行だけ。地の文の途中の（）は地の文のまま）
-      if (m) { ch.lines.push({ t: 'say', name: m[1], text: text2(m[2]).replace(/^\(/, '（').replace(/\)$/, '）'), inner: true }); continue; }
-      m = line.match(/^([^\s「」『』：:（）()]{1,12})[：:]\s*(.+)$/);
-      if (m) { ch.lines.push({ t: 'say', name: m[1], text: text2(m[2]) }); continue; }
+      m = line.match(/^([^\s「」『』：:（）()]{1,30})([（(].*[）)])$/);   // （最後が丸かっこで閉じている行だけ。地の文の途中の（）は地の文のまま）
+      if (m) { ch.lines.push(Object.assign({ t: 'say', text: text2(m[2]).replace(/^\(/, '（').replace(/\)$/, '）'), inner: true }, who(m[1]))); continue; }
+      m = line.match(/^([^\s「」『』：:（）()]{1,30})[：:]\s*(.+)$/);
+      if (m) { ch.lines.push(Object.assign({ t: 'say', text: text2(m[2]) }, who(m[1]))); continue; }
       ch.lines.push({ t: 'narr', text: text2(line) });
     }
     return chapters.filter((c) => c.lines.length);
@@ -170,16 +172,20 @@
         if (opts.first && opts.onTutorial) { scr.hidden = true; open = false; opts.onTutorial(resume); return; }
         continue; // (in ふりかえり the battle is skipped)
       }
-      show(L.t === 'say' ? L.name : '', L.text, L.t === 'narr', L.inner);
+      show(L.t === 'say' ? L.name : '', L.text, L.t === 'narr', L.inner, L.label);
       return;
     }
     close(true);
   }
-  function show(name, text, narr, inner) {
+  // name: who is speaking (lights up their character). label: the name shown in the box (オルド[？？？] → ？？？), default = name
+  function show(name, text, narr, inner, label) {
     waitUntil = 0;
-    nameEl.textContent = name || ''; nameEl.className = 'vn-name ' + nameClass(name || ''); focusSpeaker(name || '');
-    textEl.classList.toggle('narr', !!narr); textEl.classList.toggle('inner', !!inner); textEl.classList.toggle('hang', !!name);   // 台詞の2行目からは「の後ろにそろえる full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
-    if (text) { const p = document.createElement('p'); p.className = (narr ? 'narr' : nameClass(name || '')) + (inner ? ' inner' : ''); p.innerHTML = (name ? `<b>${esc(name)}</b>` : '') + esc(text); logList.appendChild(p); }
+    const shownName = label || name || '';
+    nameEl.textContent = shownName; nameEl.className = 'vn-name ' + nameClass(shownName); focusSpeaker(name || '');
+    textEl.classList.toggle('narr', !!narr); textEl.classList.toggle('inner', !!inner);
+    textEl.classList.toggle('hang', !!shownName); // 台詞の2行目からは「の後ろにそろえる
+    full = text; shown = 0; textEl.textContent = ''; box.classList.remove('done');
+    if (text) { const p = document.createElement('p'); p.className = (narr ? 'narr' : nameClass(shownName)) + (inner ? ' inner' : ''); p.innerHTML = (shownName ? `<b>${esc(shownName)}</b>` : '') + esc(text); logList.appendChild(p); }
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function stepText(t) {
