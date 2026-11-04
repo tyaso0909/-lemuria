@@ -2078,7 +2078,7 @@
       e.T.spot = d.spot.every;
       const pool = A.slice().sort(() => Math.random() - 0.5).slice(0, d.spot.n);
       for (const t of pool) addHazard({ x: t.x, r: d.spot.r, dur: d.spot.time, dmg: e.atkV * d.spot.mul, from: e, follow: t, lock: 0.5, tower: false, spot: true });
-      if (pool.length) G.texts.push({ x: e.x, y: e.y - 220, v: 'スポットライト', life: 1.2, skill: true });
+      if (pool.length) { G.texts.push({ x: e.x, y: e.y - 220, v: 'スポットライト', life: 1.2, skill: true }); e.spotN = (e.spotN || 0) + 1; }   // (spotN: the sprite plays スポットライト)
     }
     const s = bossWalk(e, A, dt);
     if ((s.near || s.atTower) && e.cool <= 0) { e.cool = d.rate; startWind(e, 'waltz', 0.8); addHazard({ x: e.x - d.waltz.off, r: d.waltz.r, dur: 0.8, dmg: e.atkV, from: e }); }
