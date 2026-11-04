@@ -797,7 +797,7 @@
         // 記憶のかけら: the nightmare is gone; only a fragment of its memory remains (memories.js)
         const mm = !G.scripted && window.Memories ? window.Memories.gain(u.kind, G.wave) : null;
         if (mm) { G.memRun++; G.shards.push({ x: u.x, y: u.y - 110 - flyH(u), t: 0 }); }
-        showBanner(`${u.def.name}は光の粒となって消えた`, (mm ? `記憶のかけらが残った（${Math.min(3, mm.n)} / 3）` : '') + (alive(G.enemies).length > 1 ? (mm ? '　' : '') + '残るナイトメアを退けろ' : ''), 2.6);
+        showBanner(`${u.def.name}は夜の海へ沈んでいった`, (mm ? `記憶のかけらが残った（${Math.min(3, mm.n)} / 3）` : '') + (alive(G.enemies).length > 1 ? (mm ? '　' : '') + '残るナイトメアを退けろ' : ''), 2.6);
         for (const a of G.allies) { a.hitByRun = false; a.hitByDash = false; }
         G.shake = 0.8; G.fx.push({ type: 'burst', x: u.x, y: u.y - 110 - flyH(u), life: 1, dur: 1.6 }); }
     } else {
@@ -2666,7 +2666,7 @@
   let bannerTimer = 0;
   function showBanner(big, sub, dur, boss) {
     ui.bannerBig.textContent = big; ui.bannerSub.textContent = sub || '';
-    ui.bannerBig.classList.toggle('long', String(big).length > 15); // a long line (a boss's name + 「は光の粒となって消えた」) stays on one line
+    ui.bannerBig.classList.toggle('long', String(big).length > 15); // a long line (a boss's name + 「は夜の海へ沈んでいった」) stays on one line
     ui.banner.classList.toggle('boss', !!boss); ui.banner.classList.add('show');
     bannerTimer = dur;
   }
@@ -2740,7 +2740,7 @@
       `<div class="br">ウェーブ突破 ${rw.waves}　討伐 ${rw.kills}${rw.boss ? `　ボス撃破 ${rw.boss}` : ''}　／　所持 ${Math.floor(Abilities.save.crystals).toLocaleString('ja-JP')}</div>`;
     $('resultPanel').className = 'panel ' + (win ? 'win' : 'lose');
     $('resTitle').textContent = win ? '防衛成功' : '灯が消えた';
-    $('resLead').textContent = win ? `第${CONFIG.totalWaves}ウェーブまで灯を守り抜いた。最後の主「${G.lastBossName || ENEMIES.boss.name}」は光の粒となって消え、その光は灯台へ吸い込まれていった。` : tierLine + 'ナイトメアが追憶の灯へ届いた。';
+    $('resLead').textContent = win ? `第${CONFIG.totalWaves}ウェーブまで灯を守り抜いた。最後の主「${G.lastBossName || ENEMIES.boss.name}」は、夜の海へ沈んでいった。` : tierLine + 'ナイトメアが追憶の灯へ届いた。';
     const rows = [
       ['到達ウェーブ', `${G.wave} / ${CONFIG.totalWaves}`],
       ['討伐数', G.kills],
