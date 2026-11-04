@@ -2196,11 +2196,11 @@
     e.starve = e.starveT > 0 ? 1 : Math.max(0, (e.starve || 0) - dt);
     e.shield = e.shieldHp > 0 ? Math.min(1, e.shieldHp / (e.maxHp * Dr.shield * Dr.take)) : 0;
     if (timer(e, 'hist', dt, 0)) { e.T.hist = 0.25; (e.hist = e.hist || []).push({ t: G.time, hp: e.hp }); while (e.hist.length && e.hist[0].t < G.time - 7) e.hist.shift(); }
-    if (e.phase === 1 && e.hp < e.maxHp * d.p2At) { e.phase = 2; e.form = null; e.stanceOn = false; if (e.rwPending) { e.wind = 0; e.rwPending = false; } e.T.beam = 1.5; showBanner(d.p2[0], d.p2[1], 1.8, true); Sound.play('boss'); G.shake = 0.6; }
+    if (e.phase === 1 && e.hp < e.maxHp * d.p2At) { e.phase = 2; e.form = null; e.stanceOn = false; if (e.rwPending) { e.wind = 0; e.rwPending = false; } e.T.beam = 1.5; e.powerN = (e.powerN || 0) + 1; showBanner(d.p2[0], d.p2[1], 1.8, true); Sound.play('boss'); G.shake = 0.6; }
     // wear the memory of a boss defeated in this run
     e.formN = e.formN || 0;
     if (e.phase === 1 && e.formN < d.forms.length && e.hp < e.maxHp * d.forms[e.formN]) {
-      e.formN++; e.form = pickForm(e); e.formT = d.formTime; e.T.f1 = 1.5; e.stanceOn = false;
+      e.formN++; e.form = pickForm(e); e.formT = d.formTime; e.T.f1 = 1.5; e.stanceOn = false; e.powerN = (e.powerN || 0) + 1; // (powerN: the sprite plays 多段強化)
       showBanner(`「${ENEMIES[e.form].name}」の記憶をまとった`, d.name, 2.2, true); Sound.play('boss');
     }
     if (e.form) { e.formT -= dt; if (e.formT <= 0) { e.form = null; e.stanceOn = false; if (e.rwPending) { e.wind = 0; e.rwPending = false; } } }
@@ -2360,6 +2360,13 @@
       const want = u.toyT > 0 ? 'toy' : u.kind; // 異端の魔女のおもちゃの魔法: the resident is drawn as a little toy
       const dk = Art.KINDS.includes(want) ? want : u.toyT > 0 ? 'doll' : u.boss ? 'boss' : 'shade';
       Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : u.kind === 'friend' && Art.hasSprite && Art.hasSprite('friend') ? alpha * (0.3 + 0.7 * Math.max(0, Math.min(1, u.reveal || 0))) : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1) * growView(u), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });
+      if (u.kind === 'devourer' && !u.dead && (u.shield || 0) > 0.01 && Art.hasSprite('devourer')) { // 灯を喰らうもの: the membrane of drained light (コマ絵の上に重ねる)
+        const sh = Math.min(1, u.shield), cy = uy - 125, tt = u.anim || 0; ctx.save();
+        ctx.beginPath(); for (let k = 0; k <= 48; k++) { const a = k / 48 * Math.PI * 2, r = 1 + Math.sin(a * 5 + tt * 2.2) * 0.012 + Math.sin(a * 3 - tt * 1.4) * 0.01; const px = u.x + Math.cos(a) * 200 * r, py = cy + Math.sin(a) * 150 * r; if (k) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
+        ctx.fillStyle = `rgba(150,120,240,${(0.08 * sh).toFixed(3)})`; ctx.fill();
+        ctx.strokeStyle = `rgba(200,170,255,${(0.16 * sh).toFixed(3)})`; ctx.lineWidth = 12; ctx.stroke();
+        ctx.strokeStyle = `rgba(225,205,255,${(0.7 * sh).toFixed(3)})`; ctx.lineWidth = 2.2; ctx.stroke(); ctx.restore();
+      }
       // 灯を喰らうもの: a translucent ghost of the boss whose memory it wears
       if (u.form && !u.dead && Art.KINDS.includes(u.form)) Art.drawUnit(ctx, u.form, u.x - 40, uy - (ENEMIES[u.form].flying ? 40 : 0), -1, { anim: u.anim, walk: false, atk: 0, hurt: 0, wind: 0, phase: 2, hp: 1, maxHp: 1, reveal: 1, fly: !!ENEMIES[u.form].flying, stance: u.stance }, { alpha: alpha * 0.42, enemy: true, noShadow: true });
       // ハンターの印: a small amber diamond over a marked enemy
