@@ -2110,7 +2110,12 @@
     e.belly = e.belly || [];
     e.bellyN = e.belly.length;
     if (e.upT > 0) { e.upT -= dt; e.walk = false; if (e.upT <= 0) e.fly = true; return; }
-    if (e.diveT > 0) { e.diveT -= dt; e.hidden = true; e.reveal = Math.max(0, e.reveal - dt * 2); e.walk = false; return; }
+    if (e.diveT > 0) {
+      e.diveT -= dt; e.hidden = true; e.reveal = Math.max(0, e.reveal - dt * 2); e.walk = false;
+      // (コマ絵) after the 潜航 frames it waits under the place it will surface, so the 浮上 ripples show there
+      if (e.diveX != null && Dv.time - e.diveT >= 1.3) { e.x = e.diveX; e.diveX = null; }
+      return;
+    }
     e.hidden = false; e.reveal = Math.min(1, e.reveal + dt * 2);
     const w = tickWind(e, dt);
     if (w === 'spout') {
@@ -2125,7 +2130,8 @@
       let t = null; for (const a of A) if (!a.summoned && !a.away && (!t || a.x > t.x)) t = a;
       const tx = Math.min(d.hover - 50, t ? t.x : LANE.front + 200);
       e.diveT = Dv.time; e.hidden = true; G.fx.push({ type: 'smoke', x: e.x, y: e.y - FLY_H, life: 1, dur: 0.8 }); Sound.play('slam');
-      addHazard({ x: tx, r: Dv.r, dur: Dv.time, dmg: e.atkV * Dv.mul, knock: Dv.knock, from: e, then: () => { e.x = Math.max(LANE.front + 140, tx + 50); e.diveT = 0; e.hidden = false; e.reveal = 1; e.fly = false; e.upT = Dv.up; G.shake = 0.6; } });
+      e.diveN = (e.diveN || 0) + 1; e.diveX = Math.max(LANE.front + 140, tx + 50); e.fly = false; // (diveN/upN: the sprite plays 潜航 / 浮上; it dives into the sea, not the sky)
+      addHazard({ x: tx, r: Dv.r, dur: Dv.time, dmg: e.atkV * Dv.mul, knock: Dv.knock, from: e, then: () => { e.x = Math.max(LANE.front + 140, tx + 50); e.diveX = null; e.diveT = 0; e.hidden = false; e.reveal = 1; e.fly = false; e.upT = Dv.up; e.upN = (e.upN || 0) + 1; G.shake = 0.6; } });
       return;
     }
     if (e.belly.length < Sw.max && timer(e, 'sw', dt, Sw.first)) {
@@ -2350,6 +2356,7 @@
       if (!u.dead && u.dazeT > 0) Art.glow(ctx, u.x, uy - 60, 18, 'rgba(200,160,255,A)', 0.5);
       if (u.jumpH > 0 && !u.dead) { ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#05081a'; Art.ell(ctx, u.x, u.y, 14, 3.5); ctx.fill(); ctx.restore(); }
       // (a kind without its own sprite yet falls back to a stand-in so the game never breaks)
+      if (u.kind === 'whale' && u.diveT > 0 && Art.hasSprite('whale') && ENEMIES.whale.dive.time - u.diveT >= 1.3 && u.diveT >= 1.0) continue; // 深海の夢鯨: under the sea
       const want = u.toyT > 0 ? 'toy' : u.kind; // 異端の魔女のおもちゃの魔法: the resident is drawn as a little toy
       const dk = Art.KINDS.includes(want) ? want : u.toyT > 0 ? 'doll' : u.boss ? 'boss' : 'shade';
       Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : u.kind === 'friend' && Art.hasSprite && Art.hasSprite('friend') ? alpha * (0.3 + 0.7 * Math.max(0, Math.min(1, u.reveal || 0))) : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1) * growView(u), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });
