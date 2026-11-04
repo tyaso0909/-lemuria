@@ -2016,7 +2016,7 @@
       if (e.transformT <= 0) { e.transform = 0; e.barrier = d.barrier.hits; G.texts.push({ x: e.x, y: e.y - 220, v: 'リボンの結界', life: 1.2, skill: true }); }
       return;
     }
-    if (e.phase === 2 && !(e.barrier > 0) && timer(e, 'rib', dt, d.barrier.every)) { e.barrier = d.barrier.hits; e.T.rib = d.barrier.every; G.texts.push({ x: e.x, y: e.y - 220, v: 'リボンの結界', life: 1.2, skill: true }); }
+    if (e.phase === 2 && !(e.barrier > 0) && timer(e, 'rib', dt, d.barrier.every)) { e.barrier = d.barrier.hits; e.T.rib = d.barrier.every; e.ribN = (e.ribN || 0) + 1; G.texts.push({ x: e.x, y: e.y - 220, v: 'リボンの結界', life: 1.2, skill: true }); }
     const w = tickWind(e, dt);
     if (w === 'toy') return; // (the spell itself lands through its telegraph)
     if (w) return;
@@ -2032,7 +2032,7 @@
         return;
       }
     }
-    if (timer(e, 'heart', dt, 1.5)) { const t = backAlly(e, A, d.heart.reach); if (t) { e.T.heart = d.heart.every; e.atk = 1; enemyFire(e, t, 'heart', d.heart.mul, 130); } }
+    if (timer(e, 'heart', dt, 1.5)) { const t = backAlly(e, A, d.heart.reach); if (t) { e.T.heart = d.heart.every; e.heartN = (e.heartN || 0) + 1; enemyFire(e, t, 'heart', d.heart.mul, 130); } }   // (heartN: the sprite plays ハート光弾)
     const s = bossWalk(e, A, dt);
     if ((s.near || s.atTower) && e.cool <= 0) { e.cool = d.rate; startWind(e, 'bonk', 0.6); addHazard({ x: e.x - d.bonk.off, r: d.bonk.r, dur: 0.6, dmg: e.atkV, from: e }); }
   }
