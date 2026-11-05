@@ -165,7 +165,7 @@
   // 敵（ナイトメア）
   // cost = budget used by one draw (a pack counts once); weight = draw weight; tier = first tier it can appear in
   const ENEMIES = {
-    shade:  { name: 'ほつれ影',     role: '通常型', hp: 72,  atk: 11, rate: 1.0, range: 36, speed: 44, dream: 3, radius: 12, cost: 1, weight: 5, tier: 1 },
+    shade:  { name: 'ほつれ影',     role: '通常型', hp: 72,  atk: 21, rate: 1.875, range: 36, speed: 44, dream: 3, radius: 12, cost: 1, weight: 5, tier: 1 },
     // slip: from wave slipFromWave on, each runner dashes past the first ally it meets once (slipDist px)
     runner: { name: '駆ける残響',   role: '高速型', hp: 46,  atk: 9,  rate: 0.7, range: 34, speed: 104, dream: 3, radius: 14, slip: 1, slipDist: 300, slipFromWave: 4, cost: 1, weight: 3, tier: 1 },
     armor:  { name: '錆びた守り手', role: '重装型', hp: 380, atk: 30, rate: 1.6, range: 42, speed: 26, dream: 8, radius: 16, armor: 0.35, cost: 4, weight: 2, tier: 1 },
