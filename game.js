@@ -207,7 +207,7 @@
       heart: { every: 2.4, reach: 420, mul: 0.8 }, toy: { every: 9, first: 5, time: 4, wind: 1.0 }, change: 2, barrier: { hits: 6, every: 12, cut: 0.5 }, bonk: { off: 50, r: 80 } },
     dancer:  { name: '終幕の踊り子', role: 'ボス', boss: true, ai: 'dancer', tier: 7, hp: 2900, atk: 42, rate: 2.4, range: 90, speed: 26, dream: 120, radius: 38, sub: '発表会の舞台を夢見た少女の、終わらない最後の演目', p2: ['第二幕', 'くるくると前線を抜けてくる'],
       waltz: { off: 70, r: 120 }, curtain: { time: 3, push: 150, r: 320 }, spin: { every: 8, first: 3, mul: 0.9 }, spot: { every: 7, first: 2, n: 3, r: 45, time: 2.0, mul: 1.6 } },
-    whale:   { name: '深海の夢鯨', role: 'ボス', boss: true, ai: 'whale', tier: 9, hp: 3600, atk: 46, rate: 3.0, range: 120, speed: 16, dream: 120, radius: 80, flying: true, hover: 860, diveAfter: 30, sub: '空を飛ぶことを夢見た人たちの願いが、海の底で鯨になった', p2: ['夢鯨が深く潜った', '浮かび上がる場所に注意'],
+    whale:   { name: '空を泳ぐ夢鯨', role: 'ボス', boss: true, ai: 'whale', tier: 9, hp: 3600, atk: 46, rate: 3.0, range: 120, speed: 16, dream: 120, radius: 80, flying: true, hover: 860, diveAfter: 30, sub: '空を飛ぶことを夢見た人たちの願いが、海の底で鯨になった', p2: ['夢鯨が深く潜った', '浮かび上がる場所に注意'],
       swallow: { every: 10, first: 6, wind: 1.0, time: 8, hit: 0.6, heal: 0.2, max: 3, reach: 420 }, spout: { every: 9, r: 300, v: 0.03 }, dive: { every: 10, first: 2, time: 2.5, r: 140, mul: 1.5, knock: 50, up: 6 } },
     devourer: { name: '灯を喰らうもの', role: 'ボス', boss: true, ai: 'devourer', final: true, tier: 10, hp: 3200, atk: 50, rate: 2.6, range: 220, speed: 12, dream: 200, radius: 180, armor: 0.15, sub: '夜の底から、灯よりも大きな影がせり上がる', p2: ['光輪が砕けた', '光の帯に注意'],
       regen: 0.85, drain: { every: 15, first: 8, wind: 2.5, take: 3, takeCapped: 1, shield: 0.015, starve: 5, weak: 0.2 }, hand: { chance: 0.25, cd: 6, stun: 3 }, forms: [0.8, 0.6, 0.4], formTime: 20, slam: { off: 190, r: 130 }, beam: { every: 8, len: 700, wind: 1.4, mul: 1.4 }, p2At: 0.2 },
@@ -2084,7 +2084,7 @@
     if ((s.near || s.atTower) && e.cool <= 0) { e.cool = d.rate; startWind(e, 'waltz', 0.8); addHazard({ x: e.x - d.waltz.off, r: d.waltz.r, dur: 0.8, dmg: e.atkV, from: e }); }
   }
 
-  // 深海の夢鯨: swims in the sky (shooters / spears / turrets reach it). Swallows a front-line resident for a while — it keeps hitting from
+  // 空を泳ぐ夢鯨: swims in the sky (shooters / spears / turrets reach it). Swallows a front-line resident for a while — it keeps hitting from
   // inside and comes out a little healed. Spouts to heal nightmares. phase 2 (half HP or after diveAfter s): dives out of reach and breaches
   // where the warning circle is, then stays low for a few seconds so melee can hit it
   function releaseBelly(e, b) {
@@ -2356,7 +2356,7 @@
       if (!u.dead && u.dazeT > 0) Art.glow(ctx, u.x, uy - 60, 18, 'rgba(200,160,255,A)', 0.5);
       if (u.jumpH > 0 && !u.dead) { ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#05081a'; Art.ell(ctx, u.x, u.y, 14, 3.5); ctx.fill(); ctx.restore(); }
       // (a kind without its own sprite yet falls back to a stand-in so the game never breaks)
-      if (u.kind === 'whale' && u.diveT > 0 && Art.hasSprite('whale') && ENEMIES.whale.dive.time - u.diveT >= 1.3 && u.diveT >= 1.0) continue; // 深海の夢鯨: under the sea
+      if (u.kind === 'whale' && u.diveT > 0 && Art.hasSprite('whale') && ENEMIES.whale.dive.time - u.diveT >= 1.3 && u.diveT >= 1.0) continue; // 空を泳ぐ夢鯨: under the sea
       const want = u.toyT > 0 ? 'toy' : u.kind; // 異端の魔女のおもちゃの魔法: the resident is drawn as a little toy
       const dk = Art.KINDS.includes(want) ? want : u.toyT > 0 ? 'doll' : u.boss ? 'boss' : 'shade';
       Art.drawUnit(ctx, dk, u.x, uy, u.side === 'ally' ? (u.face || 1) : -1, u, { alpha: dk !== u.kind && u.hidden ? alpha * 0.15 : u.kind === 'friend' && Art.hasSprite && Art.hasSprite('friend') ? alpha * (0.3 + 0.7 * Math.max(0, Math.min(1, u.reveal || 0))) : alpha, enemy: u.side === 'enemy', elite: u.elite, scale: (u.elite ? 1.2 : 1) * (dk !== u.kind && !u.boss ? 0.7 : 1) * growView(u), noShadow: !!u.fly || u.jumpH > 0 || u.hidden });

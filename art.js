@@ -5261,9 +5261,9 @@
       for (let i = 0; i < 5; i++) { const p = (t * 0.3 + i / 5) % 1, mx = -44 + i * 22 + Math.sin(t + i) * 8; ctx.fillRect(mx, -30 - p * 220, 2.4, 2.4); }
     },
 
-    // ---------------- ボス「深海の夢鯨」 ----------------
+    // ---------------- ボス「空を泳ぐ夢鯨」 ----------------
     whale(ctx, u) {
-      // 深海の夢鯨 — not one person's dream: the wishes of many who dreamed of flying, sunk into the sea of
+      // 空を泳ぐ夢鯨 — not one person's dream: the wishes of many who dreamed of flying, sunk into the sea of
       // forgetting and grown into a whale. A night sky drifts inside its translucent body (round lights only).
       const t = u.anim || 0, at = u.atk || 0, P2 = (u.phase || 1) >= 2;
       const wind = clamp01(u.wind || 0), w = ease(wind), wk = u.windKind;
